@@ -1,0 +1,191 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""menu-seo — Restaurant menu SEO analyzer.
+
+Checks whether menu items are crawlable text (not trapped in PDFs or images),
+validates Menu/MenuItem schema, and audits price markup and dietary labels.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; menu-seo/1.0)"
+
+DIETARY_LABELS = ["vegan", "vegetarian", "gluten-free", "gluten free", "gf", "dairy-free",
+                  "dairy free", "nut-free", "halal", "kosher", "keto", "paleo", "organic"]
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def check_menu_accessibility(soup, url):
+    issues = []
+
+    # Check for PDF menu links
+    pdf_links = soup.find_all("a", href=re.compile(r"\.pdf($|\?)", re.IGNORECASE))
+    for link in pdf_links:
+        text = link.get_text(strip=True).lower()
+        if any(w in text for w in ["menu", "food", "drink", "wine", "lunch", "dinner", "breakfast"]):
+            issues.append({"type": "PDF_MENU", "severity": "HIGH",
+                          "detail": f"Menu linked as PDF: {link['href'][:80]}",
+                          "fix": "Add HTML version of menu alongside PDF. Search engines can't reliably index PDF menu content."})
+
+    # Check for menu images without alt text
+    menu_imgs = []
+    for img in soup.find_all("img"):
+        src = (img.get("src", "") + " " + img.get("alt", "")).lower()
+        if any(w in src for w in ["menu", "food-menu", "lunch", "dinner"]):
+            menu_imgs.append(img)
+            if not img.get("alt") or len(img["alt"]) < 5:
+                issues.append({"type": "MENU_IMAGE_NO_ALT", "severity": "HIGH",
+                              "detail": f"Menu image without descriptive alt text: {img.get('src', '')[:60]}",
+                              "fix": "Add alt text listing the menu items shown in the image."})
+
+    # Check for iframe menus (common with third-party menu providers)
+    for iframe in soup.find_all("iframe"):
+        src = iframe.get("src", "").lower()
+        if any(w in src for w in ["menu", "order", "toast", "square", "grubhub", "doordash", "ubereats"]):
+            issues.append({"type": "IFRAME_MENU", "severity": "MEDIUM",
+                          "detail": f"Menu in iframe (not crawlable): {src[:80]}",
+                          "fix": "Add a static HTML menu on the page alongside the ordering iframe."})
+
+    # Count visible menu items as text
+    body_text = soup.get_text(separator=" ", strip=True).lower()
+    price_pattern = re.compile(r"\$\d+\.?\d{0,2}")
+    prices = price_pattern.findall(body_text)
+
+    if len(prices) < 3:
+        issues.append({"type": "NO_VISIBLE_PRICES", "severity": "MEDIUM",
+                      "detail": f"Only {len(prices)} price(s) found as crawlable text",
+                      "fix": "Display menu items with prices as HTML text, not just in images or PDFs."})
+
+    return issues, len(prices)
+
+
+def check_menu_schema(soup):
+    issues = []
+    found_menu = False
+    found_items = 0
+
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            schemas = data if isinstance(data, list) else [data]
+            if isinstance(data, dict) and "@graph" in data:
+                schemas.extend(data["@graph"])
+
+            for s in schemas:
+                stype = s.get("@type", "")
+                if stype == "Menu" or stype == "MenuSection":
+                    found_menu = True
+                    sections = s.get("hasMenuSection", [])
+                    if isinstance(sections, dict):
+                        sections = [sections]
+                    for sec in sections:
+                        items = sec.get("hasMenuItem", [])
+                        if isinstance(items, dict):
+                            items = [items]
+                        found_items += len(items)
+                        for item in items:
+                            if not item.get("name"):
+                                issues.append({"type": "MENU_ITEM_NO_NAME", "severity": "MISSING",
+                                              "detail": "MenuItem missing name", "fix": "Add name to MenuItem schema."})
+                            if not item.get("offers") and not item.get("price"):
+                                issues.append({"type": "MENU_ITEM_NO_PRICE", "severity": "RECOMMENDED",
+                                              "detail": f"MenuItem '{item.get('name', '?')}' missing price/offers",
+                                              "fix": "Add offers with price to MenuItem."})
+
+                if stype == "Restaurant" or stype == "FoodEstablishment":
+                    if not s.get("menu") and not s.get("hasMenu"):
+                        issues.append({"type": "RESTAURANT_NO_MENU_REF", "severity": "RECOMMENDED",
+                                      "detail": "Restaurant schema has no menu or hasMenu property",
+                                      "fix": "Add menu URL or inline Menu schema to Restaurant."})
+                    if not s.get("servesCuisine"):
+                        issues.append({"type": "NO_CUISINE_TYPE", "severity": "RECOMMENDED",
+                                      "detail": "Restaurant schema missing servesCuisine",
+                                      "fix": "Add servesCuisine (e.g., 'Italian', 'Mexican', 'American')."})
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if not found_menu:
+        issues.append({"type": "NO_MENU_SCHEMA", "severity": "HIGH",
+                      "detail": "No Menu or MenuSection schema found",
+                      "fix": "Add JSON-LD with @type: Menu containing MenuSection and MenuItem entries."})
+
+    return issues, found_items
+
+
+def check_dietary_labels(soup):
+    body_text = soup.get_text(separator=" ", strip=True).lower()
+    found = [label for label in DIETARY_LABELS if label in body_text]
+    return found
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Analyze restaurant menu SEO: crawlability, schema, pricing, dietary labels."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    soup = BeautifulSoup(html, "lxml")
+    access_issues, price_count = check_menu_accessibility(soup, url)
+    schema_issues, schema_items = check_menu_schema(soup)
+    dietary = check_dietary_labels(soup)
+
+    all_issues = access_issues + schema_issues
+
+    if json_out:
+        print(json.dumps({"url": url, "issues": all_issues, "prices_found": price_count,
+                          "schema_items": schema_items, "dietary_labels": dietary}, indent=2))
+        return
+
+    click.echo(f"\nMenu SEO Audit: {url}\n")
+    click.echo(f"  Crawlable prices: {price_count}")
+    click.echo(f"  Schema menu items: {schema_items}")
+    click.echo(f"  Dietary labels: {', '.join(dietary) if dietary else 'none found'}")
+    click.echo()
+
+    if all_issues:
+        high = [i for i in all_issues if i["severity"] == "HIGH"]
+        medium = [i for i in all_issues if i["severity"] in ("MEDIUM", "MISSING")]
+        recommended = [i for i in all_issues if i["severity"] == "RECOMMENDED"]
+
+        if high:
+            click.echo(f"  HIGH ({len(high)}):")
+            for i in high:
+                click.echo(f"    {i['type']}: {i['detail']}")
+                click.echo(f"      Fix: {i['fix']}")
+        if medium:
+            click.echo(f"  MEDIUM ({len(medium)}):")
+            for i in medium:
+                click.echo(f"    {i['type']}: {i['detail']}")
+        if recommended:
+            click.echo(f"  RECOMMENDED ({len(recommended)}):")
+            for i in recommended:
+                click.echo(f"    {i['type']}: {i['detail']}")
+    else:
+        click.echo("  No issues found.")
+
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
