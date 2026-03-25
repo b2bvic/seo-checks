@@ -1,0 +1,167 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""product-schema — Product page schema.org validator for e-commerce SEO.
+
+Checks Product, Offer, AggregateRating, Review, and BreadcrumbList schema
+completeness. Reports missing required/recommended fields for Google
+rich results eligibility.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; product-schema/1.0)"
+
+REQUIRED_PRODUCT = ["name", "@type"]
+RECOMMENDED_PRODUCT = ["image", "description", "sku", "brand", "offers", "aggregateRating", "review"]
+REQUIRED_OFFER = ["price", "priceCurrency", "availability"]
+RECOMMENDED_OFFER = ["url", "itemCondition", "seller"]
+REQUIRED_RATING = ["ratingValue", "reviewCount"]
+REQUIRED_REVIEW = ["author", "reviewRating"]
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def extract_jsonld(html):
+    soup = BeautifulSoup(html, "lxml")
+    schemas = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            if isinstance(data, list):
+                schemas.extend(data)
+            else:
+                schemas.append(data)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return schemas
+
+
+def find_products(schemas):
+    products = []
+    for s in schemas:
+        if s.get("@type") == "Product":
+            products.append(s)
+        if "@graph" in s:
+            for item in s["@graph"]:
+                if item.get("@type") == "Product":
+                    products.append(item)
+    return products
+
+
+def check_fields(obj, required, recommended, label):
+    issues = []
+    for f in required:
+        if f not in obj or not obj[f]:
+            issues.append({"field": f, "severity": "MISSING", "label": label})
+    for f in recommended:
+        if f not in obj or not obj[f]:
+            issues.append({"field": f, "severity": "RECOMMENDED", "label": label})
+    return issues
+
+
+def audit_product(product):
+    issues = check_fields(product, REQUIRED_PRODUCT, RECOMMENDED_PRODUCT, "Product")
+
+    offers = product.get("offers", {})
+    if isinstance(offers, list):
+        for i, o in enumerate(offers):
+            issues += check_fields(o, REQUIRED_OFFER, RECOMMENDED_OFFER, f"Offer[{i}]")
+    elif isinstance(offers, dict):
+        if offers.get("@type") == "AggregateOffer":
+            for f in ["lowPrice", "highPrice", "priceCurrency", "offerCount"]:
+                if f not in offers:
+                    issues.append({"field": f, "severity": "RECOMMENDED", "label": "AggregateOffer"})
+        else:
+            issues += check_fields(offers, REQUIRED_OFFER, RECOMMENDED_OFFER, "Offer")
+
+    rating = product.get("aggregateRating", {})
+    if rating:
+        issues += check_fields(rating, REQUIRED_RATING, [], "AggregateRating")
+
+    reviews = product.get("review", [])
+    if isinstance(reviews, dict):
+        reviews = [reviews]
+    for i, r in enumerate(reviews[:3]):
+        issues += check_fields(r, REQUIRED_REVIEW, [], f"Review[{i}]")
+
+    return issues
+
+
+def score(issues):
+    missing = sum(1 for i in issues if i["severity"] == "MISSING")
+    recommended = sum(1 for i in issues if i["severity"] == "RECOMMENDED")
+    total = len(REQUIRED_PRODUCT) + len(RECOMMENDED_PRODUCT) + len(REQUIRED_OFFER) + len(RECOMMENDED_OFFER) + len(REQUIRED_RATING)
+    present = total - missing - recommended
+    return max(0, int(present / total * 100))
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True, help="Output as JSON")
+def main(url, json_out):
+    """Validate Product schema.org markup for Google rich results."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    schemas = extract_jsonld(html)
+    products = find_products(schemas)
+
+    if not products:
+        if json_out:
+            print(json.dumps({"url": url, "products": 0, "error": "No Product schema found"}))
+        else:
+            click.echo(f"No Product schema found on {url}")
+            click.echo("Add JSON-LD with @type: Product to enable rich results.")
+        sys.exit(1)
+
+    all_issues = []
+    for i, product in enumerate(products):
+        issues = audit_product(product)
+        all_issues.append({
+            "product": product.get("name", f"Product {i+1}"),
+            "issues": issues,
+            "score": score(issues),
+        })
+
+    if json_out:
+        print(json.dumps({"url": url, "products": all_issues}, indent=2))
+        return
+
+    click.echo(f"\nProduct Schema Audit: {url}\n")
+    for p in all_issues:
+        click.echo(f"  {p['product']} — Score: {p['score']}/100")
+        missing = [i for i in p["issues"] if i["severity"] == "MISSING"]
+        recommended = [i for i in p["issues"] if i["severity"] == "RECOMMENDED"]
+        if missing:
+            click.echo(f"    MISSING ({len(missing)}):")
+            for i in missing:
+                click.echo(f"      {i['label']}.{i['field']}")
+        if recommended:
+            click.echo(f"    RECOMMENDED ({len(recommended)}):")
+            for i in recommended:
+                click.echo(f"      {i['label']}.{i['field']}")
+        if not missing and not recommended:
+            click.echo("    All fields present.")
+        click.echo()
+
+
+if __name__ == "__main__":
+    main()
