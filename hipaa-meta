@@ -1,0 +1,197 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""hipaa-meta — HIPAA-safe meta tag auditor for healthcare websites.
+
+Scans for potential PHI (Protected Health Information) exposure in meta tags,
+alt text, URL parameters, and review schema. Healthcare marketing teams use
+this to catch HIPAA violations before Google indexes them.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+from urllib.parse import urlparse, parse_qs
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; hipaa-meta/1.0)"
+
+# Patterns that suggest PHI exposure
+NAME_PATTERN = re.compile(r"\b[A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?\b")
+PHONE_PATTERN = re.compile(r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}")
+EMAIL_PATTERN = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+DOB_PATTERN = re.compile(r"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b")
+SSN_PATTERN = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
+MRN_PATTERN = re.compile(r"\bMRN[:\s#]*\d+\b", re.IGNORECASE)
+
+# URL parameter names that suggest PII
+PII_PARAMS = {"patient", "name", "firstname", "lastname", "email", "phone", "dob",
+              "ssn", "mrn", "patientid", "patient_id", "member", "memberid"}
+
+# Review schema fields that might contain patient names
+REVIEW_FIELDS = ["author", "reviewBody", "description"]
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def check_meta_tags(soup, url):
+    issues = []
+    for meta in soup.find_all("meta"):
+        content = meta.get("content", "")
+        name = meta.get("name", meta.get("property", ""))
+
+        if PHONE_PATTERN.search(content) and name in ("description", "og:description", "twitter:description"):
+            issues.append({"type": "PHONE_IN_META", "severity": "MEDIUM",
+                          "detail": f"Phone number in {name}: ...{PHONE_PATTERN.search(content).group()}...",
+                          "location": f"<meta name='{name}'>"})
+
+        if EMAIL_PATTERN.search(content) and "description" in name.lower():
+            issues.append({"type": "EMAIL_IN_META", "severity": "MEDIUM",
+                          "detail": f"Email in meta description",
+                          "location": f"<meta name='{name}'>"})
+
+        if SSN_PATTERN.search(content):
+            issues.append({"type": "SSN_IN_META", "severity": "CRITICAL",
+                          "detail": "SSN pattern detected in meta content",
+                          "location": f"<meta name='{name}'>"})
+
+        if DOB_PATTERN.search(content) and name in ("description", "og:description"):
+            issues.append({"type": "DOB_IN_META", "severity": "HIGH",
+                          "detail": "Date of birth pattern in meta description",
+                          "location": f"<meta name='{name}'>"})
+    return issues
+
+
+def check_alt_text(soup):
+    issues = []
+    for img in soup.find_all("img", alt=True):
+        alt = img["alt"]
+        if NAME_PATTERN.search(alt) and any(w in alt.lower() for w in ["patient", "before", "after", "treatment", "result"]):
+            issues.append({"type": "PATIENT_NAME_IN_ALT", "severity": "HIGH",
+                          "detail": f"Possible patient name in alt text: '{alt[:60]}...'",
+                          "location": f"<img alt='{alt[:40]}...'>"})
+    return issues
+
+
+def check_urls(soup, base_url):
+    issues = []
+    parsed_base = urlparse(base_url)
+
+    # Check base URL params
+    params = parse_qs(parsed_base.query)
+    for param in params:
+        if param.lower() in PII_PARAMS:
+            issues.append({"type": "PII_IN_URL_PARAM", "severity": "HIGH",
+                          "detail": f"PII parameter in URL: ?{param}=...",
+                          "location": base_url})
+
+    # Check all links on page
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        try:
+            parsed = urlparse(href)
+            for param in parse_qs(parsed.query):
+                if param.lower() in PII_PARAMS:
+                    issues.append({"type": "PII_IN_LINK_PARAM", "severity": "HIGH",
+                                  "detail": f"PII parameter in link: ?{param}=...",
+                                  "location": href[:80]})
+        except Exception:
+            pass
+    return issues
+
+
+def check_review_schema(soup):
+    issues = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            schemas = data if isinstance(data, list) else [data]
+            if isinstance(data, dict) and "@graph" in data:
+                schemas.extend(data["@graph"])
+
+            for s in schemas:
+                reviews = s.get("review", [])
+                if isinstance(reviews, dict):
+                    reviews = [reviews]
+                for review in reviews:
+                    body = review.get("reviewBody", "")
+                    if MRN_PATTERN.search(body) or SSN_PATTERN.search(body):
+                        issues.append({"type": "PHI_IN_REVIEW_SCHEMA", "severity": "CRITICAL",
+                                      "detail": "MRN or SSN pattern in review schema",
+                                      "location": "JSON-LD Review"})
+                    author = review.get("author", {})
+                    if isinstance(author, dict):
+                        author_name = author.get("name", "")
+                    else:
+                        author_name = str(author)
+                    # Flag if review mentions specific medical conditions alongside names
+                    if NAME_PATTERN.search(body) and any(w in body.lower() for w in ["diagnosis", "treatment", "surgery", "prescription", "condition"]):
+                        issues.append({"type": "PATIENT_DETAIL_IN_REVIEW", "severity": "HIGH",
+                                      "detail": f"Review may contain patient medical details",
+                                      "location": "JSON-LD Review"})
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Scan a healthcare website for potential HIPAA violations in meta tags and markup."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    soup = BeautifulSoup(html, "lxml")
+    issues = []
+    issues += check_meta_tags(soup, url)
+    issues += check_alt_text(soup)
+    issues += check_urls(soup, url)
+    issues += check_review_schema(soup)
+
+    if json_out:
+        print(json.dumps({"url": url, "issues": issues, "total": len(issues)}, indent=2))
+        return
+
+    click.echo(f"\nHIPAA Meta Audit: {url}\n")
+
+    if not issues:
+        click.echo("  No potential PHI exposure detected.\n")
+        return
+
+    critical = [i for i in issues if i["severity"] == "CRITICAL"]
+    high = [i for i in issues if i["severity"] == "HIGH"]
+    medium = [i for i in issues if i["severity"] == "MEDIUM"]
+
+    if critical:
+        click.echo(f"  CRITICAL ({len(critical)}):")
+        for i in critical:
+            click.echo(f"    {i['type']}: {i['detail']}")
+    if high:
+        click.echo(f"  HIGH ({len(high)}):")
+        for i in high:
+            click.echo(f"    {i['type']}: {i['detail']}")
+    if medium:
+        click.echo(f"  MEDIUM ({len(medium)}):")
+        for i in medium:
+            click.echo(f"    {i['type']}: {i['detail']}")
+
+    click.echo(f"\n  Total issues: {len(issues)} ({len(critical)} critical, {len(high)} high, {len(medium)} medium)\n")
+
+
+if __name__ == "__main__":
+    main()
