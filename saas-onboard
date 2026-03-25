@@ -1,0 +1,247 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""saas-onboard — SaaS onboarding flow SEO checker.
+
+Checks noindex on auth pages, canonical handling, SoftwareApplication schema,
+and internal linking between marketing site and app. SaaS companies often
+leak SEO equity through misconfigured onboarding flows.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+from urllib.parse import urlparse, urljoin
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; saas-onboard/1.0)"
+
+AUTH_PATTERNS = re.compile(
+    r"/(login|signin|sign-in|signup|sign-up|register|auth|oauth|"
+    r"forgot|reset|password|verify|confirm|onboarding|activate|"
+    r"dashboard|app|console|settings|account|billing|profile)",
+    re.IGNORECASE,
+)
+
+
+def fetch(url, follow=True):
+    try:
+        resp = requests.get(url, timeout=20, headers={"User-Agent": UA},
+                           allow_redirects=follow)
+        return resp
+    except Exception:
+        return None
+
+
+def check_noindex(html, url):
+    """Auth and app pages should have noindex."""
+    soup = BeautifulSoup(html, "lxml")
+    issues = []
+
+    # Check if this looks like an auth/app page
+    is_auth = bool(AUTH_PATTERNS.search(url))
+    if not is_auth:
+        return issues, soup
+
+    # Check for noindex
+    has_noindex = False
+    for meta in soup.find_all("meta", attrs={"name": "robots"}):
+        if "noindex" in (meta.get("content", "").lower()):
+            has_noindex = True
+
+    if not has_noindex:
+        issues.append({
+            "type": "AUTH_PAGE_INDEXED",
+            "severity": "HIGH",
+            "detail": f"Auth/app page without noindex: {url}",
+            "fix": "Add <meta name='robots' content='noindex'> to prevent indexing login/dashboard pages.",
+        })
+
+    return issues, soup
+
+
+def check_canonical(soup, url):
+    """Check canonical tag handling."""
+    issues = []
+    canonical = soup.find("link", rel="canonical")
+
+    if not canonical:
+        issues.append({
+            "type": "NO_CANONICAL",
+            "severity": "MEDIUM",
+            "detail": "No canonical tag found",
+            "fix": "Add <link rel='canonical'> pointing to the preferred URL.",
+        })
+    else:
+        href = canonical.get("href", "")
+        if href and urlparse(href).path != urlparse(url).path:
+            issues.append({
+                "type": "CANONICAL_MISMATCH",
+                "severity": "MEDIUM",
+                "detail": f"Canonical points to different path: {href}",
+                "fix": "Ensure canonical matches the current page URL or points to the intended canonical.",
+            })
+
+    return issues
+
+
+def check_software_schema(soup):
+    """Check for SoftwareApplication schema."""
+    issues = []
+    found = False
+
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            schemas = data if isinstance(data, list) else [data]
+            if isinstance(data, dict) and "@graph" in data:
+                schemas.extend(data["@graph"])
+
+            for s in schemas:
+                stype = s.get("@type", "")
+                if stype in ("SoftwareApplication", "WebApplication", "MobileApplication"):
+                    found = True
+                    if not s.get("offers"):
+                        issues.append({"type": "NO_OFFERS", "severity": "RECOMMENDED",
+                                      "detail": "SoftwareApplication missing offers (pricing)",
+                                      "fix": "Add offers with price, priceCurrency for software rich results."})
+                    if not s.get("applicationCategory"):
+                        issues.append({"type": "NO_CATEGORY", "severity": "RECOMMENDED",
+                                      "detail": "SoftwareApplication missing applicationCategory",
+                                      "fix": "Add applicationCategory (e.g., 'BusinessApplication', 'DeveloperApplication')."})
+                    if not s.get("operatingSystem") and not s.get("browserRequirements"):
+                        issues.append({"type": "NO_PLATFORM", "severity": "RECOMMENDED",
+                                      "detail": "Missing operatingSystem or browserRequirements",
+                                      "fix": "Add operatingSystem or browserRequirements."})
+                    if not s.get("aggregateRating"):
+                        issues.append({"type": "NO_RATING", "severity": "RECOMMENDED",
+                                      "detail": "No aggregateRating in SoftwareApplication",
+                                      "fix": "Add aggregateRating with ratingValue and reviewCount."})
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    if not found:
+        issues.append({
+            "type": "NO_SOFTWARE_SCHEMA",
+            "severity": "HIGH",
+            "detail": "No SoftwareApplication schema found",
+            "fix": "Add JSON-LD with @type: SoftwareApplication on your marketing/pricing page.",
+        })
+
+    return issues
+
+
+def check_internal_links(soup, base_url):
+    """Check linking between marketing site and app."""
+    issues = []
+    parsed_base = urlparse(base_url)
+    app_links = 0
+    marketing_links = 0
+
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        full_url = urljoin(base_url, href)
+        parsed = urlparse(full_url)
+
+        if parsed.netloc == parsed_base.netloc:
+            if AUTH_PATTERNS.search(parsed.path):
+                app_links += 1
+            else:
+                marketing_links += 1
+
+    return {"app_links": app_links, "marketing_links": marketing_links}
+
+
+def discover_auth_pages(soup, base_url):
+    """Find auth/app pages linked from the marketing site."""
+    auth_urls = set()
+    for a in soup.find_all("a", href=True):
+        full = urljoin(base_url, a["href"])
+        if AUTH_PATTERNS.search(full):
+            auth_urls.add(full)
+    return list(auth_urls)[:10]
+
+
+@click.command()
+@click.argument("url")
+@click.option("--deep", is_flag=True, help="Also check discovered auth pages")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, deep, json_out):
+    """Check SaaS onboarding flow for SEO issues."""
+    resp = fetch(url)
+    if not resp:
+        click.echo(f"Error fetching {url}", err=True)
+        sys.exit(1)
+
+    html = resp.text
+    noindex_issues, soup = check_noindex(html, url)
+    canonical_issues = check_canonical(soup, url)
+    schema_issues = check_software_schema(soup)
+    link_stats = check_internal_links(soup, url)
+    auth_pages = discover_auth_pages(soup, url)
+
+    all_issues = noindex_issues + canonical_issues + schema_issues
+
+    # Deep mode: check each discovered auth page for noindex
+    deep_results = []
+    if deep and auth_pages:
+        for auth_url in auth_pages:
+            r = fetch(auth_url)
+            if r:
+                issues, _ = check_noindex(r.text, auth_url)
+                deep_results.append({"url": auth_url, "issues": issues})
+                all_issues.extend(issues)
+
+    if json_out:
+        print(json.dumps({
+            "url": url, "issues": all_issues, "link_stats": link_stats,
+            "auth_pages_found": auth_pages, "deep_results": deep_results,
+        }, indent=2))
+        return
+
+    click.echo(f"\nSaaS Onboarding SEO Audit: {url}\n")
+    click.echo(f"  Internal links: {link_stats['marketing_links']} marketing, {link_stats['app_links']} app/auth")
+    click.echo(f"  Auth pages discovered: {len(auth_pages)}")
+    if auth_pages:
+        for ap in auth_pages[:5]:
+            click.echo(f"    {ap}")
+    click.echo()
+
+    if all_issues:
+        high = [i for i in all_issues if i["severity"] == "HIGH"]
+        medium = [i for i in all_issues if i["severity"] == "MEDIUM"]
+        rec = [i for i in all_issues if i["severity"] == "RECOMMENDED"]
+        if high:
+            click.echo(f"  HIGH ({len(high)}):")
+            for i in high:
+                click.echo(f"    {i['type']}: {i['detail']}")
+                click.echo(f"      Fix: {i['fix']}")
+        if medium:
+            click.echo(f"  MEDIUM ({len(medium)}):")
+            for i in medium:
+                click.echo(f"    {i['type']}: {i['detail']}")
+        if rec:
+            click.echo(f"  RECOMMENDED ({len(rec)}):")
+            for i in rec:
+                click.echo(f"    {i['type']}: {i['detail']}")
+    else:
+        click.echo("  No issues found.")
+
+    if deep and deep_results:
+        click.echo(f"\n  Deep scan — auth pages:")
+        for dr in deep_results:
+            status = f"{len(dr['issues'])} issues" if dr["issues"] else "OK (noindex present)"
+            click.echo(f"    {dr['url']}: {status}")
+
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
