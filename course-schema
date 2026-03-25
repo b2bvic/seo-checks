@@ -1,0 +1,161 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""course-schema — Course/program page schema.org validator for education SEO.
+
+Validates Course, CourseInstance, and EducationalOrganization schema.
+Checks tuition, duration, enrollment dates, and delivery method.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; course-schema/1.0)"
+
+SCHEMA_SPECS = {
+    "Course": {
+        "required": ["name", "description", "provider"],
+        "recommended": ["courseCode", "educationalLevel", "inLanguage", "offers",
+                       "hasCourseInstance", "numberOfCredits", "occupationalCredentialAwarded",
+                       "timeRequired", "image", "url"],
+    },
+    "CourseInstance": {
+        "required": ["courseMode"],
+        "recommended": ["startDate", "endDate", "location", "instructor",
+                       "courseWorkload", "offers"],
+    },
+    "EducationalOrganization": {
+        "required": ["name"],
+        "recommended": ["address", "url", "telephone", "logo",
+                       "accreditation", "alumni", "department"],
+    },
+    "OnlineCourse": {
+        "required": ["name", "description", "provider"],
+        "recommended": ["offers", "hasCourseInstance", "educationalLevel",
+                       "timeRequired", "image", "inLanguage"],
+    },
+}
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def extract_schemas(html):
+    soup = BeautifulSoup(html, "lxml")
+    schemas = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            if isinstance(data, list):
+                schemas.extend(data)
+            elif isinstance(data, dict):
+                schemas.append(data)
+                if "@graph" in data:
+                    schemas.extend(data["@graph"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return schemas
+
+
+def find_education_schemas(schemas):
+    found = []
+    for s in schemas:
+        stype = s.get("@type", "")
+        if isinstance(stype, list):
+            for t in stype:
+                if t in SCHEMA_SPECS:
+                    found.append((t, s))
+        elif stype in SCHEMA_SPECS:
+            found.append((stype, s))
+
+        # Check nested CourseInstances
+        for inst in (s.get("hasCourseInstance") or []):
+            if isinstance(inst, dict) and inst.get("@type") == "CourseInstance":
+                found.append(("CourseInstance", inst))
+    return found
+
+
+def audit(stype, data):
+    spec = SCHEMA_SPECS.get(stype, {"required": [], "recommended": []})
+    issues = []
+    for f in spec["required"]:
+        if f not in data or not data[f]:
+            issues.append({"field": f, "severity": "MISSING"})
+    for f in spec["recommended"]:
+        if f not in data or not data[f]:
+            issues.append({"field": f, "severity": "RECOMMENDED"})
+
+    # Check offers for price
+    offers = data.get("offers", {})
+    if isinstance(offers, dict):
+        if not offers.get("price") and not offers.get("priceCurrency"):
+            issues.append({"field": "offers.price", "severity": "RECOMMENDED"})
+    elif isinstance(offers, list):
+        for o in offers:
+            if isinstance(o, dict) and not o.get("price"):
+                issues.append({"field": "offers.price", "severity": "RECOMMENDED"})
+
+    return issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Validate Course/Education schema.org markup for rich results."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    schemas = extract_schemas(html)
+    edu_schemas = find_education_schemas(schemas)
+
+    results = []
+    for stype, data in edu_schemas:
+        issues = audit(stype, data)
+        spec = SCHEMA_SPECS.get(stype, {"required": [], "recommended": []})
+        total = len(spec["required"]) + len(spec["recommended"])
+        score = max(0, int((total - len(issues)) / max(total, 1) * 100))
+        results.append({"type": stype, "name": data.get("name", "unnamed"), "issues": issues, "score": score})
+
+    if json_out:
+        print(json.dumps({"url": url, "schemas": results}, indent=2))
+        return
+
+    click.echo(f"\nCourse Schema Audit: {url}\n")
+
+    if not edu_schemas:
+        all_types = [s.get("@type", "unknown") for s in schemas]
+        click.echo("  No Course or Education schema found.")
+        if all_types:
+            click.echo(f"  Found types: {', '.join(str(t) for t in all_types)}")
+        click.echo("\n  Add JSON-LD with @type: Course for education rich results.\n")
+    else:
+        for r in results:
+            click.echo(f"  {r['type']}: {r['name']} — Score: {r['score']}/100")
+            missing = [i for i in r["issues"] if i["severity"] == "MISSING"]
+            recommended = [i for i in r["issues"] if i["severity"] == "RECOMMENDED"]
+            if missing:
+                click.echo(f"    MISSING: {', '.join(i['field'] for i in missing)}")
+            if recommended:
+                click.echo(f"    RECOMMENDED: {', '.join(i['field'] for i in recommended)}")
+            if not missing and not recommended:
+                click.echo("    All fields present.")
+            click.echo()
+
+
+if __name__ == "__main__":
+    main()
