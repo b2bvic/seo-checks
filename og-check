@@ -1,0 +1,144 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""og-check — Open Graph and social preview meta tag validator.
+
+Checks og:title, og:description, og:image, twitter:card, and other
+social meta tags. Reports what Facebook, LinkedIn, and Twitter/X will
+show when your page is shared.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; og-check/1.0)"
+
+OG_REQUIRED = ["og:title", "og:description", "og:image", "og:url", "og:type"]
+OG_RECOMMENDED = ["og:site_name", "og:locale", "og:image:width", "og:image:height", "og:image:alt"]
+TWITTER_REQUIRED = ["twitter:card"]
+TWITTER_RECOMMENDED = ["twitter:title", "twitter:description", "twitter:image", "twitter:site"]
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def extract_meta(html):
+    soup = BeautifulSoup(html, "lxml")
+    tags = {}
+    for meta in soup.find_all("meta"):
+        prop = meta.get("property") or meta.get("name") or ""
+        content = meta.get("content", "")
+        if prop:
+            tags[prop.lower()] = content
+    title = soup.find("title")
+    tags["_title"] = title.get_text(strip=True) if title else ""
+    desc = soup.find("meta", attrs={"name": "description"})
+    tags["_description"] = desc.get("content", "") if desc else ""
+    return tags
+
+
+def audit(tags):
+    issues = []
+    for field in OG_REQUIRED:
+        if field not in tags or not tags[field]:
+            issues.append({"field": field, "severity": "MISSING", "group": "Open Graph"})
+    for field in OG_RECOMMENDED:
+        if field not in tags or not tags[field]:
+            issues.append({"field": field, "severity": "RECOMMENDED", "group": "Open Graph"})
+    for field in TWITTER_REQUIRED:
+        if field not in tags or not tags[field]:
+            issues.append({"field": field, "severity": "MISSING", "group": "Twitter Card"})
+    for field in TWITTER_RECOMMENDED:
+        if field not in tags or not tags[field]:
+            issues.append({"field": field, "severity": "RECOMMENDED", "group": "Twitter Card"})
+
+    # Content checks
+    og_title = tags.get("og:title", "")
+    if og_title and len(og_title) > 60:
+        issues.append({"field": "og:title", "severity": "WARNING", "group": "Quality",
+                       "detail": f"og:title is {len(og_title)} chars (recommended <60)"})
+    og_desc = tags.get("og:description", "")
+    if og_desc and len(og_desc) > 200:
+        issues.append({"field": "og:description", "severity": "WARNING", "group": "Quality",
+                       "detail": f"og:description is {len(og_desc)} chars (recommended <200)"})
+    og_image = tags.get("og:image", "")
+    if og_image and not og_image.startswith("http"):
+        issues.append({"field": "og:image", "severity": "WARNING", "group": "Quality",
+                       "detail": "og:image should be an absolute URL"})
+
+    return issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Check Open Graph and Twitter Card meta tags for social sharing."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    tags = extract_meta(html)
+    issues = audit(tags)
+
+    if json_out:
+        print(json.dumps({"url": url, "tags": tags, "issues": issues}, indent=2))
+        return
+
+    click.echo(f"\nSocial Preview Audit: {url}\n")
+
+    # Show what platforms will display
+    click.echo("  Facebook / LinkedIn preview:")
+    click.echo(f"    Title: {tags.get('og:title', tags.get('_title', '(missing)'))}")
+    click.echo(f"    Description: {tags.get('og:description', tags.get('_description', '(missing)'))[:80]}")
+    click.echo(f"    Image: {tags.get('og:image', '(missing)')[:80]}")
+    click.echo()
+    click.echo("  Twitter/X preview:")
+    click.echo(f"    Card: {tags.get('twitter:card', '(missing)')}")
+    click.echo(f"    Title: {tags.get('twitter:title', tags.get('og:title', '(missing)'))}")
+    click.echo(f"    Description: {tags.get('twitter:description', tags.get('og:description', '(missing)'))[:80]}")
+    click.echo(f"    Image: {tags.get('twitter:image', tags.get('og:image', '(missing)'))[:80]}")
+    click.echo()
+
+    missing = [i for i in issues if i["severity"] == "MISSING"]
+    warnings = [i for i in issues if i["severity"] == "WARNING"]
+    recommended = [i for i in issues if i["severity"] == "RECOMMENDED"]
+
+    total_fields = len(OG_REQUIRED) + len(TWITTER_REQUIRED)
+    present = total_fields - len(missing)
+    score = int(present / total_fields * 100) if total_fields else 100
+    click.echo(f"  Score: {score}/100")
+    click.echo()
+
+    if missing:
+        click.echo(f"  MISSING ({len(missing)}):")
+        for i in missing:
+            click.echo(f"    {i['field']} ({i['group']})")
+    if warnings:
+        click.echo(f"  WARNINGS ({len(warnings)}):")
+        for i in warnings:
+            click.echo(f"    {i.get('detail', i['field'])}")
+    if recommended:
+        click.echo(f"  RECOMMENDED ({len(recommended)}):")
+        for i in recommended:
+            click.echo(f"    {i['field']} ({i['group']})")
+    if not issues:
+        click.echo("  All social meta tags present.")
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
