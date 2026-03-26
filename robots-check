@@ -1,0 +1,165 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "certifi"]
+# ///
+"""robots-check — Robots.txt validator and analyzer.
+
+Fetches robots.txt, validates syntax, checks for common mistakes,
+reports which user-agents are blocked and what's disallowed.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import re
+import sys
+from urllib.parse import urlparse, urljoin
+
+import click
+import requests
+
+UA = "Mozilla/5.0 (compatible; robots-check/1.0)"
+
+
+def fetch_robots(url):
+    parsed = urlparse(url)
+    robots_url = f"{parsed.scheme}://{parsed.netloc}/robots.txt"
+    resp = requests.get(robots_url, timeout=15, headers={"User-Agent": UA})
+    return resp, robots_url
+
+
+def parse_robots(text):
+    blocks = []
+    current = None
+    sitemaps = []
+    issues = []
+    line_num = 0
+
+    for line in text.split("\n"):
+        line_num += 1
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        if ":" not in stripped:
+            issues.append({"line": line_num, "severity": "WARNING", "detail": f"Invalid line (no colon): {stripped[:60]}"})
+            continue
+
+        directive, _, value = stripped.partition(":")
+        directive = directive.strip().lower()
+        value = value.strip()
+
+        if directive == "user-agent":
+            current = {"user_agent": value, "rules": [], "line": line_num}
+            blocks.append(current)
+        elif directive in ("disallow", "allow"):
+            if current is None:
+                issues.append({"line": line_num, "severity": "ERROR", "detail": f"{directive} before any User-agent"})
+            else:
+                current["rules"].append({"type": directive, "path": value})
+        elif directive == "sitemap":
+            sitemaps.append(value)
+        elif directive == "crawl-delay":
+            if current:
+                current["crawl_delay"] = value
+        else:
+            issues.append({"line": line_num, "severity": "WARNING", "detail": f"Unknown directive: {directive}"})
+
+    # Check for common mistakes
+    for block in blocks:
+        for rule in block["rules"]:
+            path = rule["path"]
+            if rule["type"] == "disallow" and path == "/":
+                issues.append({"line": block["line"], "severity": "CRITICAL",
+                              "detail": f"Disallow: / blocks entire site for {block['user_agent']}"})
+            if path and not path.startswith("/") and not path.startswith("*"):
+                issues.append({"line": block["line"], "severity": "WARNING",
+                              "detail": f"Path should start with /: {path}"})
+
+    if not blocks:
+        issues.append({"line": 0, "severity": "WARNING", "detail": "No User-agent directives found"})
+    if not sitemaps:
+        issues.append({"line": 0, "severity": "RECOMMENDED", "detail": "No Sitemap directive — add Sitemap: URL"})
+
+    return blocks, sitemaps, issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Validate and analyze a site's robots.txt."""
+    try:
+        resp, robots_url = fetch_robots(url)
+    except Exception as e:
+        click.echo(f"Error fetching robots.txt: {e}", err=True)
+        sys.exit(1)
+
+    if resp.status_code == 404:
+        click.echo(f"\nNo robots.txt found at {robots_url}")
+        click.echo("This means all crawlers have full access. Consider adding one.\n")
+        sys.exit(0)
+
+    blocks, sitemaps, issues = parse_robots(resp.text)
+
+    if json_out:
+        import json
+        print(json.dumps({"url": robots_url, "status": resp.status_code,
+                          "blocks": blocks, "sitemaps": sitemaps, "issues": issues}, indent=2, default=str))
+        return
+
+    click.echo(f"\nRobots.txt Audit: {robots_url}\n")
+    click.echo(f"  Status: {resp.status_code}")
+    click.echo(f"  Size: {len(resp.text)} bytes")
+    click.echo(f"  User-agent blocks: {len(blocks)}")
+    click.echo(f"  Sitemaps: {len(sitemaps)}")
+    click.echo()
+
+    for block in blocks:
+        disallows = [r for r in block["rules"] if r["type"] == "disallow"]
+        allows = [r for r in block["rules"] if r["type"] == "allow"]
+        click.echo(f"  User-agent: {block['user_agent']}")
+        if disallows:
+            for r in disallows:
+                click.echo(f"    Disallow: {r['path']}")
+        if allows:
+            for r in allows:
+                click.echo(f"    Allow: {r['path']}")
+        if block.get("crawl_delay"):
+            click.echo(f"    Crawl-delay: {block['crawl_delay']}")
+        click.echo()
+
+    if sitemaps:
+        click.echo("  Sitemaps:")
+        for s in sitemaps:
+            click.echo(f"    {s}")
+        click.echo()
+
+    if issues:
+        critical = [i for i in issues if i["severity"] == "CRITICAL"]
+        errors = [i for i in issues if i["severity"] == "ERROR"]
+        warnings = [i for i in issues if i["severity"] == "WARNING"]
+        recommended = [i for i in issues if i["severity"] == "RECOMMENDED"]
+        if critical:
+            click.echo(f"  CRITICAL ({len(critical)}):")
+            for i in critical:
+                click.echo(f"    Line {i['line']}: {i['detail']}")
+        if errors:
+            click.echo(f"  ERRORS ({len(errors)}):")
+            for i in errors:
+                click.echo(f"    Line {i['line']}: {i['detail']}")
+        if warnings:
+            click.echo(f"  WARNINGS ({len(warnings)}):")
+            for i in warnings:
+                click.echo(f"    Line {i['line']}: {i['detail']}")
+        if recommended:
+            click.echo(f"  RECOMMENDED ({len(recommended)}):")
+            for i in recommended:
+                click.echo(f"    {i['detail']}")
+    else:
+        click.echo("  No issues found.")
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
