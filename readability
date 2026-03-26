@@ -1,0 +1,151 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""readability — Content readability score checker.
+
+Computes Flesch Reading Ease, Flesch-Kincaid Grade Level, average sentence
+length, and syllable density. Content that scores too high on reading level
+loses organic traffic from the majority of searchers.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; readability/1.0)"
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def extract_text(html):
+    soup = BeautifulSoup(html, "lxml")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    content = soup.find("article") or soup.find("main") or soup.find("body") or soup
+    return content.get_text(separator=" ", strip=True)
+
+
+def count_syllables(word):
+    word = word.lower().strip(".,!?;:\"'()-")
+    if not word:
+        return 0
+    count = 0
+    vowels = "aeiouy"
+    prev_vowel = False
+    for char in word:
+        is_vowel = char in vowels
+        if is_vowel and not prev_vowel:
+            count += 1
+        prev_vowel = is_vowel
+    if word.endswith("e") and count > 1:
+        count -= 1
+    return max(count, 1)
+
+
+def analyze(text):
+    sentences = re.split(r"[.!?]+", text)
+    sentences = [s.strip() for s in sentences if s.strip() and len(s.split()) > 2]
+    words = text.split()
+    words = [w for w in words if len(w) > 0]
+
+    total_words = len(words)
+    total_sentences = max(len(sentences), 1)
+    total_syllables = sum(count_syllables(w) for w in words)
+
+    avg_sentence_len = total_words / total_sentences
+    avg_syllables = total_syllables / max(total_words, 1)
+
+    # Flesch Reading Ease: 206.835 - 1.015(words/sentences) - 84.6(syllables/words)
+    flesch_ease = 206.835 - (1.015 * avg_sentence_len) - (84.6 * avg_syllables)
+    flesch_ease = max(0, min(100, flesch_ease))
+
+    # Flesch-Kincaid Grade: 0.39(words/sentences) + 11.8(syllables/words) - 15.59
+    fk_grade = (0.39 * avg_sentence_len) + (11.8 * avg_syllables) - 15.59
+    fk_grade = max(0, fk_grade)
+
+    # Difficulty label
+    if flesch_ease >= 80:
+        difficulty = "Easy (6th grade)"
+    elif flesch_ease >= 60:
+        difficulty = "Standard (8th-9th grade)"
+    elif flesch_ease >= 40:
+        difficulty = "Difficult (college level)"
+    elif flesch_ease >= 20:
+        difficulty = "Very difficult (graduate level)"
+    else:
+        difficulty = "Extremely difficult (professional/academic)"
+
+    return {
+        "total_words": total_words,
+        "total_sentences": total_sentences,
+        "total_syllables": total_syllables,
+        "avg_sentence_length": round(avg_sentence_len, 1),
+        "avg_syllables_per_word": round(avg_syllables, 2),
+        "flesch_reading_ease": round(flesch_ease, 1),
+        "flesch_kincaid_grade": round(fk_grade, 1),
+        "difficulty": difficulty,
+    }
+
+
+@click.command()
+@click.argument("source")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(source, json_out):
+    """Check content readability. Accepts a URL or file path."""
+    if source.startswith("http"):
+        try:
+            html = fetch(source)
+            text = extract_text(html)
+        except Exception as e:
+            click.echo(f"Error: {e}", err=True)
+            sys.exit(1)
+    else:
+        from pathlib import Path
+        p = Path(source)
+        if not p.exists():
+            click.echo(f"File not found: {source}", err=True)
+            sys.exit(1)
+        text = p.read_text(encoding="utf-8")
+        # Strip markdown formatting
+        text = re.sub(r"^#{1,6}\s+", "", text, flags=re.MULTILINE)
+        text = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", text)
+        text = re.sub(r"[*_]{1,3}([^*_]+)[*_]{1,3}", r"\1", text)
+
+    stats = analyze(text)
+
+    if json_out:
+        print(json.dumps({"source": source, **stats}, indent=2))
+        return
+
+    click.echo(f"\nReadability Report: {source}\n")
+    click.echo(f"  Words: {stats['total_words']}")
+    click.echo(f"  Sentences: {stats['total_sentences']}")
+    click.echo(f"  Avg sentence length: {stats['avg_sentence_length']} words")
+    click.echo(f"  Avg syllables/word: {stats['avg_syllables_per_word']}")
+    click.echo()
+    click.echo(f"  Flesch Reading Ease: {stats['flesch_reading_ease']}/100")
+    click.echo(f"  Flesch-Kincaid Grade: {stats['flesch_kincaid_grade']}")
+    click.echo(f"  Difficulty: {stats['difficulty']}")
+    click.echo()
+
+    if stats["flesch_reading_ease"] < 40:
+        click.echo("  Recommendation: Simplify. Shorter sentences, simpler words.")
+        click.echo("  Target: 60+ Flesch Reading Ease for web content.\n")
+    elif stats["avg_sentence_length"] > 25:
+        click.echo("  Recommendation: Break up long sentences. Target avg <20 words.\n")
+
+
+if __name__ == "__main__":
+    main()
