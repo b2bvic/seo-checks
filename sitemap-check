@@ -1,0 +1,143 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "certifi"]
+# ///
+"""sitemap-check — Sitemap.xml validator and URL checker.
+
+Parses sitemap XML, validates structure, and optionally checks each URL
+returns 200. Finds broken URLs before Google does.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+import xml.etree.ElementTree as ET
+from urllib.parse import urlparse
+
+import click
+import requests
+
+UA = "Mozilla/5.0 (compatible; sitemap-check/1.0)"
+NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp
+
+
+def parse_sitemap(xml_text, url):
+    issues = []
+    urls = []
+    child_sitemaps = []
+
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError as e:
+        return [], [], [{"severity": "CRITICAL", "detail": f"XML parse error: {e}"}]
+
+    # Sitemap index?
+    for sm in root.findall(".//sm:sitemap", NS):
+        loc = sm.find("sm:loc", NS)
+        if loc is not None and loc.text:
+            child_sitemaps.append(loc.text.strip())
+
+    # Regular sitemap URLs
+    for url_el in root.findall(".//sm:url", NS):
+        loc = url_el.find("sm:loc", NS)
+        lastmod = url_el.find("sm:lastmod", NS)
+        if loc is not None and loc.text:
+            urls.append({
+                "url": loc.text.strip(),
+                "lastmod": lastmod.text.strip() if lastmod is not None else None,
+            })
+
+    if not urls and not child_sitemaps:
+        issues.append({"severity": "WARNING", "detail": "Sitemap contains no URLs and no child sitemaps"})
+
+    return urls, child_sitemaps, issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--check-urls", is_flag=True, help="HTTP check each URL (slower)")
+@click.option("--limit", "-l", default=50, help="Max URLs to check (default: 50)")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, check_urls, limit, json_out):
+    """Validate sitemap.xml structure and optionally check URLs."""
+    # Auto-detect sitemap URL
+    parsed = urlparse(url)
+    if not url.endswith(".xml"):
+        url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
+
+    try:
+        resp = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    if resp.status_code == 404:
+        click.echo(f"\nNo sitemap found at {url}")
+        click.echo("Check /robots.txt for Sitemap: directive.\n")
+        sys.exit(1)
+
+    urls, children, issues = parse_sitemap(resp.text, url)
+
+    # Check child sitemaps
+    all_urls = list(urls)
+    for child in children[:5]:
+        try:
+            child_resp = fetch(child)
+            child_urls, _, child_issues = parse_sitemap(child_resp.text, child)
+            all_urls.extend(child_urls)
+            issues.extend(child_issues)
+        except Exception:
+            issues.append({"severity": "WARNING", "detail": f"Child sitemap unreachable: {child[:60]}"})
+
+    # URL checking
+    broken = []
+    if check_urls and all_urls:
+        check_list = all_urls[:limit]
+        click.echo(f"Checking {len(check_list)} URLs...", err=True)
+        for i, u in enumerate(check_list):
+            try:
+                r = requests.head(u["url"], timeout=10, headers={"User-Agent": UA}, allow_redirects=True)
+                if r.status_code >= 400:
+                    broken.append({"url": u["url"], "status": r.status_code})
+            except Exception:
+                broken.append({"url": u["url"], "status": "ERROR"})
+            if (i + 1) % 10 == 0:
+                click.echo(f"  {i+1}/{len(check_list)}", err=True)
+
+    if json_out:
+        print(json.dumps({"sitemap": url, "urls": len(all_urls), "children": children,
+                          "issues": issues, "broken": broken}, indent=2))
+        return
+
+    click.echo(f"\nSitemap Audit: {url}\n")
+    click.echo(f"  URLs: {len(all_urls)}")
+    if children:
+        click.echo(f"  Child sitemaps: {len(children)}")
+    click.echo(f"  With lastmod: {sum(1 for u in all_urls if u['lastmod'])}")
+    click.echo()
+
+    if broken:
+        click.echo(f"  BROKEN URLs ({len(broken)}):")
+        for b in broken:
+            click.echo(f"    [{b['status']}] {b['url'][:80]}")
+        click.echo()
+
+    if issues:
+        for i in issues:
+            click.echo(f"  [{i['severity']}] {i['detail']}")
+        click.echo()
+
+    if not issues and not broken:
+        click.echo("  Sitemap is valid. No issues found.\n")
+
+
+if __name__ == "__main__":
+    main()
