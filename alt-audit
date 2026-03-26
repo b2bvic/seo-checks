@@ -1,0 +1,118 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""alt-audit — Image alt text checker for SEO and accessibility.
+
+Finds all images on a page and reports missing, empty, or generic alt text.
+Missing alt text hurts both accessibility (screen readers) and image SEO.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import re
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; alt-audit/1.0)"
+
+GENERIC_ALT = {"image", "photo", "picture", "img", "icon", "logo", "banner",
+               "screenshot", "untitled", "default", "placeholder", "no alt",
+               ".", "-", "_", "image1", "image2", "image3", "dsc", "img_"}
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def audit_images(html, url):
+    soup = BeautifulSoup(html, "lxml")
+    images = []
+
+    for img in soup.find_all("img"):
+        src = img.get("src", img.get("data-src", ""))[:100]
+        alt = img.get("alt")
+        width = img.get("width", "")
+        height = img.get("height", "")
+
+        status = "OK"
+        if alt is None:
+            status = "MISSING"
+        elif alt.strip() == "":
+            # Empty alt is valid for decorative images
+            status = "EMPTY"
+        elif alt.strip().lower() in GENERIC_ALT or re.match(r"^(img|image|photo|pic)[\s_-]?\d*$", alt.strip(), re.I):
+            status = "GENERIC"
+        elif len(alt.strip()) < 5:
+            status = "TOO_SHORT"
+        elif len(alt.strip()) > 125:
+            status = "TOO_LONG"
+
+        images.append({"src": src, "alt": alt, "status": status,
+                       "has_dimensions": bool(width and height)})
+
+    return images
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Audit image alt text for SEO and accessibility."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    images = audit_images(html, url)
+    missing = [i for i in images if i["status"] == "MISSING"]
+    empty = [i for i in images if i["status"] == "EMPTY"]
+    generic = [i for i in images if i["status"] == "GENERIC"]
+    short = [i for i in images if i["status"] == "TOO_SHORT"]
+    long_alt = [i for i in images if i["status"] == "TOO_LONG"]
+    ok = [i for i in images if i["status"] == "OK"]
+    no_dims = [i for i in images if not i["has_dimensions"]]
+
+    if json_out:
+        print(json.dumps({"url": url, "total": len(images), "images": images}, indent=2))
+        return
+
+    click.echo(f"\nAlt Text Audit: {url}\n")
+    click.echo(f"  Images found: {len(images)}")
+    click.echo(f"  OK: {len(ok)}")
+    click.echo(f"  Missing alt: {len(missing)}")
+    click.echo(f"  Empty alt: {len(empty)} (valid if decorative)")
+    click.echo(f"  Generic alt: {len(generic)}")
+    click.echo(f"  Too short (<5 chars): {len(short)}")
+    click.echo(f"  Too long (>125 chars): {len(long_alt)}")
+    click.echo(f"  Missing width/height: {len(no_dims)}")
+    click.echo()
+
+    if missing:
+        click.echo("  MISSING alt attribute:")
+        for i in missing[:10]:
+            click.echo(f"    {i['src']}")
+        if len(missing) > 10:
+            click.echo(f"    ... +{len(missing) - 10} more")
+        click.echo()
+
+    if generic:
+        click.echo("  GENERIC alt text (not descriptive):")
+        for i in generic[:10]:
+            click.echo(f"    alt=\"{i['alt']}\" — {i['src'][:50]}")
+        click.echo()
+
+    score = int(len(ok) / max(len(images), 1) * 100)
+    click.echo(f"  Score: {score}/100\n")
+
+
+if __name__ == "__main__":
+    main()
