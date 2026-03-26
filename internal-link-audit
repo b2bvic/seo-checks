@@ -1,0 +1,143 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""internal-link-audit — Find orphan pages and analyze internal link structure.
+
+Crawls a site from the sitemap, counts inbound internal links per page,
+finds orphan pages (0 inbound links), and reports link distribution.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+import xml.etree.ElementTree as ET
+from collections import Counter
+from urllib.parse import urlparse, urljoin
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; internal-link-audit/1.0)"
+NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def get_sitemap_urls(sitemap_url, limit=200):
+    xml = fetch(sitemap_url)
+    root = ET.fromstring(xml)
+    sitemaps = root.findall(".//sm:sitemap/sm:loc", NS)
+    if sitemaps:
+        urls = []
+        for sm in sitemaps[:3]:
+            urls += get_sitemap_urls(sm.text.strip(), limit=limit - len(urls))
+            if len(urls) >= limit:
+                break
+        return urls[:limit]
+    return [el.text.strip() for el in root.findall(".//sm:url/sm:loc", NS)][:limit]
+
+
+def normalize_url(url, base_netloc):
+    parsed = urlparse(url)
+    if parsed.netloc and parsed.netloc != base_netloc:
+        return None
+    path = parsed.path.rstrip("/") or "/"
+    return f"{parsed.scheme or 'https'}://{base_netloc}{path}"
+
+
+def crawl_links(urls, base_netloc, limit=50):
+    inbound = Counter()
+    outbound = Counter()
+    external = Counter()
+
+    for i, page_url in enumerate(urls[:limit]):
+        try:
+            html = fetch(page_url)
+            soup = BeautifulSoup(html, "lxml")
+            for a in soup.find_all("a", href=True):
+                full = urljoin(page_url, a["href"])
+                norm = normalize_url(full, base_netloc)
+                if norm:
+                    inbound[norm] += 1
+                    outbound[page_url] += 1
+                else:
+                    parsed = urlparse(full)
+                    if parsed.netloc and parsed.netloc != base_netloc:
+                        external[page_url] += 1
+        except Exception:
+            pass
+        if (i + 1) % 10 == 0:
+            click.echo(f"  Crawled {i+1}/{min(len(urls), limit)}", err=True)
+
+    return inbound, outbound, external
+
+
+@click.command()
+@click.argument("sitemap_url")
+@click.option("--limit", "-l", default=50, help="Max pages to crawl (default: 50)")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(sitemap_url, limit, json_out):
+    """Audit internal link structure from a sitemap. Find orphan pages."""
+    parsed = urlparse(sitemap_url)
+    if not sitemap_url.endswith(".xml"):
+        sitemap_url = f"{parsed.scheme}://{parsed.netloc}/sitemap.xml"
+    base_netloc = urlparse(sitemap_url).netloc
+
+    try:
+        urls = get_sitemap_urls(sitemap_url, limit=limit * 2)
+    except Exception as e:
+        click.echo(f"Error fetching sitemap: {e}", err=True)
+        sys.exit(1)
+
+    click.echo(f"Found {len(urls)} URLs. Crawling {min(len(urls), limit)}...\n", err=True)
+    inbound, outbound, external = crawl_links(urls, base_netloc, limit=limit)
+
+    # Find orphan pages (in sitemap but 0 inbound links from crawled pages)
+    sitemap_set = set(normalize_url(u, base_netloc) or u for u in urls)
+    orphans = [u for u in sitemap_set if inbound.get(u, 0) == 0]
+
+    # Stats
+    link_counts = [inbound.get(normalize_url(u, base_netloc) or u, 0) for u in urls]
+    avg_links = sum(link_counts) / max(len(link_counts), 1)
+
+    if json_out:
+        print(json.dumps({
+            "sitemap": sitemap_url,
+            "pages_crawled": min(len(urls), limit),
+            "orphans": orphans,
+            "avg_inbound_links": round(avg_links, 1),
+            "top_linked": inbound.most_common(10),
+        }, indent=2))
+        return
+
+    click.echo(f"\nInternal Link Audit: {base_netloc}\n")
+    click.echo(f"  Pages in sitemap: {len(urls)}")
+    click.echo(f"  Pages crawled: {min(len(urls), limit)}")
+    click.echo(f"  Avg inbound links: {avg_links:.1f}")
+    click.echo(f"  Orphan pages (0 inbound): {len(orphans)}")
+    click.echo()
+
+    if orphans:
+        click.echo(f"  ORPHAN PAGES ({len(orphans)}):")
+        for o in orphans[:20]:
+            click.echo(f"    {o}")
+        if len(orphans) > 20:
+            click.echo(f"    ... +{len(orphans) - 20} more")
+        click.echo()
+
+    click.echo("  TOP LINKED (most inbound):")
+    for url, count in inbound.most_common(10):
+        click.echo(f"    {count:4d} links — {url[:70]}")
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
