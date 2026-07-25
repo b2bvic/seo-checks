@@ -1,23 +1,25 @@
 # sitemap-check
 
-Sitemap.xml validator and URL checker. Parses XML structure, handles sitemap indexes, optionally verifies each URL returns 200.
+A command-line sitemap parser and checker.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it reads sitemap indexes and URL sets, reports malformed XML, and can flag empty documents.
 
-```bash
-sitemap-check https://example.com
-sitemap-check https://example.com/sitemap.xml --check-urls
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/sitemap-check https://raw.githubusercontent.com/b2bvic/sitemap-check/main/sitemap-check
-chmod +x ~/.local/bin/sitemap-check
+./sitemap-check https://example.com/sitemap.xml
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
