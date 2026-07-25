@@ -1,22 +1,25 @@
 # heading-audit
 
-HTML heading hierarchy checker. Validates single H1, sequential nesting (no H2→H4 skips), and empty headings.
+A command-line heading hierarchy checker for web pages.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it reports absent or repeated H1 elements, skipped levels, empty headings, and an invalid first heading.
 
-```bash
-heading-audit https://example.com
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/heading-audit https://raw.githubusercontent.com/b2bvic/heading-audit/main/heading-audit
-chmod +x ~/.local/bin/heading-audit
+./heading-audit https://example.com
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
