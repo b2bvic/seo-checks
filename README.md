@@ -1,30 +1,25 @@
 # citation-check
 
-Local business citation consistency checker. Searches major directories for your business and flags NAP (Name, Address, Phone) inconsistencies that hurt local SEO rankings.
+A command-line checker for local-business citation consistency.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it normalizes business names, addresses, and phone values before comparison.
 
-```bash
-citation-check --name "Example Dental" --city "Raleigh NC"
-citation-check --name "Example Dental" --city "Raleigh NC" --phone "9195551234" --address "123 Main St"
-citation-check --name "Example Dental" --city "Raleigh NC" --json-output
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Directories Checked
-
-- Yelp
-- BBB
-- Yellow Pages
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/citation-check https://raw.githubusercontent.com/b2bvic/citation-check/main/citation-check
-chmod +x ~/.local/bin/citation-check
+./citation-check --name "Example Co" --city "Raleigh NC"
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
