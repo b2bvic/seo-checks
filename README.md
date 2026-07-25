@@ -1,23 +1,25 @@
 # internal-link-audit
 
-Find orphan pages and analyze internal link structure. Crawls from sitemap, counts inbound links per page, reports distribution.
+A command-line crawler for auditing internal-link structure from a sitemap.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it counts inbound, outbound, and external links across a bounded set of pages.
 
-```bash
-internal-link-audit https://example.com/sitemap.xml
-internal-link-audit https://example.com/sitemap.xml --limit 100
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/internal-link-audit https://raw.githubusercontent.com/b2bvic/internal-link-audit/main/internal-link-audit
-chmod +x ~/.local/bin/internal-link-audit
+./internal-link-audit https://example.com/sitemap.xml
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
