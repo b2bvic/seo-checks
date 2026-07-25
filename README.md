@@ -1,24 +1,25 @@
 # thin-product
 
-Detect thin product pages on e-commerce sites. Fetches pages from a sitemap, counts unique content words (excluding boilerplate), flags pages under a configurable threshold.
+A command-line detector for low-content product pages.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it reads URLs from a sitemap and compares unique-word counts against a threshold.
 
-```bash
-thin-product https://example.com/sitemap.xml
-thin-product https://example.com/sitemap.xml --threshold 150
-thin-product https://example.com/sitemap.xml --limit 50 --json-output
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/thin-product https://raw.githubusercontent.com/b2bvic/thin-product/main/thin-product
-chmod +x ~/.local/bin/thin-product
+./thin-product https://example.com/sitemap.xml
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
