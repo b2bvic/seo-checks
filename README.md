@@ -1,23 +1,25 @@
 # readability
 
-Content readability scorer. Flesch Reading Ease, Flesch-Kincaid Grade Level, average sentence length, syllable density. Accepts URLs or local files.
+A command-line readability analyzer for a URL or local file.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it calculates sentence, word, syllable, reading-ease, and grade-level measures.
 
-```bash
-readability https://example.com/blog-post
-readability article.md
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/readability https://raw.githubusercontent.com/b2bvic/readability/main/readability
-chmod +x ~/.local/bin/readability
+./readability article.md
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
