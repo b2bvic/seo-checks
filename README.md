@@ -1,32 +1,25 @@
 # spec-sheet
 
-Technical spec sheet SEO analyzer for manufacturing websites. Detects whether product specs are crawlable HTML or trapped in downloadable PDFs. Validates Product schema with technical properties.
+A command-line checker for crawlable product specifications.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it identifies specification PDFs and measures specification-like text and tables.
 
-```bash
-spec-sheet https://example-manufacturer.com/products/widget-500
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## What It Checks
-
-- PDF spec sheets linked from page (specs Google can't index)
-- HTML spec content: keyword count, unit measurements, spec tables
-- Product schema with additionalProperty, material, manufacturer, weight
-
-## Why It Matters
-
-Manufacturing companies often have extensive spec sheets — tolerances, dimensions, materials, certifications — locked inside PDFs. Google can't reliably extract that data for search results. An HTML version of the same specs makes them indexable, linkable, and eligible for rich results.
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/spec-sheet https://raw.githubusercontent.com/b2bvic/spec-sheet/main/spec-sheet
-chmod +x ~/.local/bin/spec-sheet
+./spec-sheet https://example.com/product
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
