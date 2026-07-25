@@ -1,23 +1,25 @@
 # word-freq
 
-Keyword density and word frequency analyzer. Counts single words, 2-word phrases, and 3-word phrases with density percentages. Accepts URLs or local files.
+A command-line word-frequency and phrase-frequency analyzer.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it tokenizes source text, removes stop words, and constructs adjacent-word phrases.
 
-```bash
-word-freq https://example.com/blog-post
-word-freq article.md --top 30
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/word-freq https://raw.githubusercontent.com/b2bvic/word-freq/main/word-freq
-chmod +x ~/.local/bin/word-freq
+./word-freq article.md
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
