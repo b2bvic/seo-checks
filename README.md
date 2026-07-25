@@ -1,22 +1,25 @@
 # robots-check
 
-Robots.txt validator and analyzer. Checks syntax, finds blocking rules, reports sitemaps.
+A command-line parser and checker for robots directives.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it groups directives by user agent and reports malformed lines, blocking rules, and absent sitemap declarations.
 
-```bash
-robots-check https://example.com
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/robots-check https://raw.githubusercontent.com/b2bvic/robots-check/main/robots-check
-chmod +x ~/.local/bin/robots-check
+./robots-check https://example.com/robots.txt
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
