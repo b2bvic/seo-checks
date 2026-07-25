@@ -1,51 +1,25 @@
-# SWS Skills
+# sws-skills
 
-AI agent skills for SEO, content production, and output quality. Works with Claude Code, Gemini CLI, Cursor, and any client supporting the [Agent Skills Standard](https://agentskills.io).
+A collection of portable agent skills for content and search workflows.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Skills
+This repository demonstrates **P08 (build a modular person-system)** and **P11 (voice is a written standard)** because the collection covers output checks, page conversion, scripts, freshness, metadata, and overlap analysis.
 
-| Skill | What it does |
-|-------|-------------|
-| **anti-slop** | AI output quality gate. Detect sycophancy, filler, hedging, and AI-marker vocabulary. 10 drift patterns with regex + calibration prompts. |
-| **web2md** | Convert any URL to clean markdown. Strips nav, ads, footers. Preserves heading hierarchy. |
-| **video-script** | Generate recording-ready video scripts with timing markers, shot lists, and thumbnail ideas. |
-| **content-refresh** | Audit content freshness across 8 weighted signals. Score 0-100 with prioritized actions. |
-| **meta-optimize** | Audit and optimize meta titles and descriptions with SERP competition analysis. |
-| **cannibalize** | Detect keyword cannibalization. Weighted overlap scoring, cluster analysis, merge/differentiate/redirect recommendations. |
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
-
-### Claude Code
-
-Add this marketplace to your Claude Code installation:
+## Worked example
 
 ```bash
-# Clone the repo
-git clone https://github.com/b2bvic/sws-skills.git ~/.claude/skills/sws-skills
-
-# Or copy individual skills
 cp -r sws-skills/skills/anti-slop ~/.claude/skills/
-```
-
-### Other AI Clients
-
-Copy the `skills/` directory to your client's skills location. See [Agent Skills Standard](https://agentskills.io) for client-specific paths.
-
-## Usage
-
-Once installed, use the skills as slash commands:
-
-```
-/anti-slop          — Check AI output for drift patterns
-/web2md <url>       — Convert page to markdown
-/video-script       — Generate a video script
-/content-refresh    — Audit content freshness
-/meta-optimize      — Optimize meta tags
-/cannibalize        — Find keyword cannibalization
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
