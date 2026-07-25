@@ -1,30 +1,25 @@
 # product-schema
 
-Product page schema.org validator for e-commerce SEO. Checks Product, Offer, AggregateRating, Review, and BreadcrumbList schema completeness against Google's rich result requirements.
+A command-line validator for product structured data.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it checks product, offer, rating, and review fields and derives a completeness score.
 
-```bash
-product-schema https://example.com/product-page
-product-schema https://example.com/product-page --json-output
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## What It Checks
-
-- Product: name, image, description, sku, brand, offers
-- Offer: price, priceCurrency, availability, itemCondition
-- AggregateRating: ratingValue, reviewCount
-- Review: author, reviewRating
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/product-schema https://raw.githubusercontent.com/b2bvic/product-schema/main/product-schema
-chmod +x ~/.local/bin/product-schema
+./product-schema https://example.com/product
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
