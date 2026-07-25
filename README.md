@@ -1,30 +1,25 @@
 # course-schema
 
-Course/education schema.org validator. Checks Course, CourseInstance, and EducationalOrganization schema against Google's requirements for education rich results.
+A command-line validator for course and education structured data.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it reports absent required and recommended fields, including offer pricing fields.
 
-```bash
-course-schema https://example-university.com/program
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## What It Checks
-
-- Course: name, description, provider, courseCode, educationalLevel, offers
-- CourseInstance: courseMode, startDate, endDate, instructor, courseWorkload
-- EducationalOrganization: name, address, accreditation, department
-- Tuition/price in offers schema
-- Nested CourseInstance validation
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/course-schema https://raw.githubusercontent.com/b2bvic/course-schema/main/course-schema
-chmod +x ~/.local/bin/course-schema
+./course-schema https://example.com/course
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
