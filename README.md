@@ -1,33 +1,25 @@
 # hipaa-meta
 
-HIPAA-safe meta tag auditor for healthcare websites. Scans for potential PHI (Protected Health Information) exposure in meta descriptions, image alt text, URL parameters, and review schema.
+A command-line metadata checker for healthcare web pages.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** and **P09 (agency is governed)** because it inspects metadata fields and reports phone-like values in description fields.
 
-```bash
-hipaa-meta https://example-medical.com
-hipaa-meta https://example-medical.com --json-output
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## What It Detects
-
-- Phone numbers in meta descriptions
-- Email addresses in meta content
-- SSN patterns anywhere in markup
-- Date of birth patterns in meta tags
-- Patient names in image alt text (near medical terms)
-- PII in URL query parameters (patient, name, email, dob, ssn, mrn)
-- Medical details alongside names in review schema
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/hipaa-meta https://raw.githubusercontent.com/b2bvic/hipaa-meta/main/hipaa-meta
-chmod +x ~/.local/bin/hipaa-meta
+./hipaa-meta https://example.com
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
