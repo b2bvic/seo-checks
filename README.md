@@ -1,22 +1,25 @@
 # redirect-trace
 
-Redirect chain tracer. Follows every hop from origin to destination. Detects loops, chains, HTTP/HTTPS downgrades.
+A command-line redirect-chain tracer.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it follows bounded redirect hops and reports loops when a location repeats.
 
-```bash
-redirect-trace https://example.com/old-page
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/redirect-trace https://raw.githubusercontent.com/b2bvic/redirect-trace/main/redirect-trace
-chmod +x ~/.local/bin/redirect-trace
+./redirect-trace https://example.com
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
