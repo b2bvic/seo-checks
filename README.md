@@ -1,32 +1,25 @@
 # menu-seo
 
-Restaurant menu SEO analyzer. Checks whether menu items are crawlable text (not trapped in PDFs or images), validates Menu/MenuItem schema, and audits pricing and dietary labels.
+A command-line checker for crawlable restaurant-menu content.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it reports menu content confined to PDFs, images, or frames and checks for crawlable prices.
 
-```bash
-menu-seo https://example-restaurant.com/menu
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## What It Checks
-
-- PDF menus (not indexable by Google)
-- Menu images without alt text
-- iframe menus (third-party ordering widgets)
-- Visible price count as crawlable text
-- Menu/MenuItem/Restaurant schema completeness
-- servesCuisine property
-- Dietary labels (vegan, gluten-free, halal, etc.)
-
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/menu-seo https://raw.githubusercontent.com/b2bvic/menu-seo/main/menu-seo
-chmod +x ~/.local/bin/menu-seo
+./menu-seo https://example.com/menu
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
