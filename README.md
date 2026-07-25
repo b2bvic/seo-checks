@@ -1,22 +1,25 @@
 # alt-audit
 
-Image alt text checker for SEO and accessibility. Finds missing, empty, generic, too-short, and too-long alt attributes.
+A command-line image alt-text checker for search and accessibility review.
 
-Built by [Victor Valentine Romo](https://victorvalentineromo.com) at [Scale With Search](https://scalewithsearch.com).
+## Principle cluster
 
-## Usage
+This repository demonstrates **P06 (evidence outranks fluency)** because it classifies missing, empty, generic, short, and long alt values for the images on a page.
 
-```bash
-alt-audit https://example.com
-```
+[Read the principles](https://victorvalentineromo.com/principles).
 
-## Install
+## Worked example
 
 ```bash
-curl -o ~/.local/bin/alt-audit https://raw.githubusercontent.com/b2bvic/alt-audit/main/alt-audit
-chmod +x ~/.local/bin/alt-audit
+./alt-audit https://example.com
 ```
 
 ## License
 
-MIT
+MIT.
+
+## How this was built
+
+This 2026 README refit used model assistance.
+
+No claim is made about how the underlying code was authored or reviewed.
