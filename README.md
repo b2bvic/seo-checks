@@ -1,17 +1,20 @@
-# gbp-audit
+# local-page-audit
 
-A command-line local-business page and structured-data checker.
+A command-line checker for public website content and LocalBusiness JSON-LD.
+It does not connect to, inspect, or score a Google Business Profile.
 
 ## Principle cluster
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it checks required fields, address completeness, coordinates, and related page signals.
+This repository demonstrates **P06 (evidence outranks fluency)** because it
+reports the website fields and page elements it can inspect while stating the
+boundary around profile data it cannot access.
 
 [Read the principles](https://victorvalentineromo.com/principles).
 
 ## Worked example
 
 ```bash
-./gbp-audit https://example.com
+./local-page-audit https://example.com
 ```
 
 ## License
