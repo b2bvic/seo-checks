@@ -1,10 +1,16 @@
 # hipaa-meta
 
-A command-line metadata checker for healthcare web pages.
+A command-line heuristic that flags possible identifiers in healthcare-page
+metadata for human privacy review.
+
+This is not a HIPAA compliance tool, legal opinion, PHI determination, or
+substitute for review by qualified privacy and security professionals.
 
 ## Principle cluster
 
-This repository demonstrates **P06 (evidence outranks fluency)** and **P09 (agency is governed)** because it inspects metadata fields and reports phone-like values in description fields.
+This repository demonstrates **P06 (evidence outranks fluency)** and **P09
+(agency is governed)** because it reports the exact pattern and location that
+triggered review without claiming that a regex match proves a HIPAA violation.
 
 [Read the principles](https://victorvalentineromo.com/principles).
 

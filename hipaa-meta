@@ -3,11 +3,11 @@
 # requires-python = ">=3.11"
 # dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
 # ///
-"""hipaa-meta — HIPAA-safe meta tag auditor for healthcare websites.
+"""hipaa-meta — Possible-identifier scanner for healthcare web metadata.
 
-Scans for potential PHI (Protected Health Information) exposure in meta tags,
-alt text, URL parameters, and review schema. Healthcare marketing teams use
-this to catch HIPAA violations before Google indexes them.
+Flags identifier-shaped strings in meta tags, alt text, URL parameters, and
+review schema for human privacy review. A match does not establish that data is
+PHI or that a HIPAA violation occurred. This is not a compliance or legal tool.
 
 🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
 """
@@ -149,7 +149,7 @@ def check_review_schema(soup):
 @click.argument("url")
 @click.option("--json-output", "json_out", is_flag=True)
 def main(url, json_out):
-    """Scan a healthcare website for potential HIPAA violations in meta tags and markup."""
+    """Flag possible identifiers in metadata for human privacy review."""
     try:
         html = fetch(url)
     except Exception as e:
@@ -164,13 +164,24 @@ def main(url, json_out):
     issues += check_review_schema(soup)
 
     if json_out:
-        print(json.dumps({"url": url, "issues": issues, "total": len(issues)}, indent=2))
+        print(json.dumps({
+            "url": url,
+            "issues": issues,
+            "total": len(issues),
+            "limitation": (
+                "Heuristic matches require human review and do not establish "
+                "PHI, HIPAA applicability, or a compliance violation."
+            ),
+        }, indent=2))
         return
 
-    click.echo(f"\nHIPAA Meta Audit: {url}\n")
+    click.echo(f"\nPossible Identifier Review: {url}\n")
+    click.echo(
+        "  Limitation: heuristic matches do not establish PHI or HIPAA compliance.\n"
+    )
 
     if not issues:
-        click.echo("  No potential PHI exposure detected.\n")
+        click.echo("  No configured identifier patterns were found.\n")
         return
 
     critical = [i for i in issues if i["severity"] == "CRITICAL"]
