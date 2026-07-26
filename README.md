@@ -1,17 +1,23 @@
 # citation-check
 
-A command-line checker for local-business citation consistency.
+A command-line generator for local-business directory search links.
+
+It opens no listings and makes no claim that a citation exists. Use the generated
+links to inspect each directory and compare the listing's name, address, and
+phone number with the canonical values you supplied.
 
 ## Principle cluster
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it normalizes business names, addresses, and phone values before comparison.
+This repository demonstrates **P06 (evidence outranks fluency)** because it
+returns manual-review links instead of treating a generic HTTP response as
+proof that a business listing exists.
 
 [Read the principles](https://victorvalentineromo.com/principles).
 
 ## Worked example
 
 ```bash
-./citation-check --name "Example Co" --city "Raleigh NC"
+./directory-search-links --name "Example Co" --city "Raleigh NC"
 ```
 
 ## License
