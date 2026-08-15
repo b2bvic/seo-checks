@@ -2,6 +2,10 @@
 
 A command-line assistant for finding candidate anchor phrases in an article.
 
+The tool downloads the external `dejanseo/google-links` model, which is roughly
+1.2 GB. The model name does not establish how its training corpus was built.
+Treat every suggestion as a candidate for review.
+
 ## Principle cluster
 
 This repository demonstrates **P04 (synthesis starts from sources)** and **P06 (evidence outranks fluency)** because it maps token predictions back to word spans and merges adjacent candidate tokens.
