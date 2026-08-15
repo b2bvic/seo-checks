@@ -4,7 +4,11 @@ A command-line word-frequency and phrase-frequency analyzer.
 
 ## Principle cluster
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it tokenizes source text, removes stop words, and constructs adjacent-word phrases.
+This repository demonstrates **P06 (evidence outranks fluency)** because it tokenizes source text, removes stop words, and counts the remaining terms.
+
+Bigrams and trigrams are built after stop-word removal. Their terms might not
+have been adjacent in the original source. Density uses the filtered token
+count, not the full word count.
 
 [Read the principles](https://victorvalentineromo.com/principles).
 
