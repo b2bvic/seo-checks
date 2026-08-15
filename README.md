@@ -2,6 +2,10 @@
 
 A command-line validator for product structured data.
 
+The completeness score is defined by this project. It is not a Google
+rich-result eligibility test or a guarantee that a search engine will display
+an enhancement.
+
 ## Principle cluster
 
 This repository demonstrates **P06 (evidence outranks fluency)** and **P14 (authority is structured coverage over time)** because it checks product, offer, rating, and review fields and derives a completeness score.
