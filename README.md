@@ -1,6 +1,10 @@
 # thin-product
 
-A command-line detector for low-content product pages.
+A command-line checker for low-content sitemap URLs.
+
+The tool does not detect page type or Product markup. It evaluates every URL in
+the supplied sitemap. Fetch failures are reported with the low-content results,
+so review those failures separately.
 
 ## Principle cluster
 
