@@ -1,6 +1,6 @@
 # Internal link anchor text suggestions: link-suggest
 
-Link-suggest generates anchor candidates for editors and search teams. Use its token-classification output to select possible internal links for review.
+`link-suggest` generates anchor candidates for editors and search teams. Use its token-classification output to select possible internal links for review.
 
 [Project page](https://scalewithsearch.com/code/link-suggest)
 
