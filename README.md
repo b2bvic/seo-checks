@@ -1,6 +1,6 @@
 # SaaS website SEO checker: saas-onboard
 
-Saas-onboard inspects website markup for developers and software content teams. Use its page checks to review indexing directives and canonical paths.
+`saas-onboard` inspects website markup for developers and software content teams. Use its page checks to review indexing directives and canonical paths.
 
 [Project page](https://scalewithsearch.com/code/saas-onboard)
 
