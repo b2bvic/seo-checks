@@ -1,6 +1,6 @@
 # HTTP redirect chain tracer: redirect-trace
 
-Redirect-trace records HTTP redirect hops for search teams and developers. Use its loop and downgrade reports to inspect routing problems before changing redirects.
+`redirect-trace` records HTTP redirect hops for search teams and developers. Use its loop and downgrade reports to inspect routing problems before changing redirects.
 
 [Project page](https://scalewithsearch.com/code/redirect-trace)
 
