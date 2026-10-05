@@ -1,6 +1,6 @@
 # Local citation search link generator: citation-check
 
-Citation-check generates directory search links for local search teams. Use those links to inspect listings and compare business details manually.
+`citation-check` generates directory search links for local search teams. Use those links to inspect listings and compare business details manually.
 
 [Project page](https://scalewithsearch.com/code/citation-check)
 
