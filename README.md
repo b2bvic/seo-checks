@@ -1,29 +1,62 @@
-# link-suggest
+# Internal link anchor text suggestions: link-suggest
 
-A command-line assistant for finding candidate anchor phrases in an article.
+Link-suggest generates anchor candidates for editors and search teams. Use its token-classification output to select possible internal links for review.
 
-The tool downloads the external `dejanseo/google-links` model, which is roughly
-1.2 GB. The model name does not establish how its training corpus was built.
-Treat every suggestion as a candidate for review.
+[Project page](https://scalewithsearch.com/code/link-suggest)
 
-## Principle cluster
+## Install
 
-This repository demonstrates **P04 (synthesis starts from sources)** and **P06 (evidence outranks fluency)** because it maps token predictions back to word spans and merges adjacent candidate tokens.
-
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-python suggest_links.py --file article.md
+gh repo clone b2bvic/link-suggest
+cd link-suggest
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+Install the pinned runtime libraries before using the CLI.
+
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+## Quick start
+
+```bash
+.venv/bin/python suggest_links.py --help
+printf '' | .venv/bin/python suggest_links.py
+```
+
+Empty input returns JSON without loading model weights.
+
+## How it works
+
+- Load the configured token-classification model on demand.
+- Convert predicted token spans into candidate anchor phrases.
+- Optionally match candidates against sitemap URL text.
+
+## Limits
+
+- Analysis downloads model weights when they are absent.
+- Suggestions do not prove relevance or establish a search-engine recommendation.
+- CI covers preprocessing and syntax rather than model predictions.
+
+## Related repositories
+
+- [sitemap-check](https://github.com/b2bvic/sitemap-check)
+- [redirect-trace](https://github.com/b2bvic/redirect-trace)
+- [internal-link-audit](https://github.com/b2bvic/internal-link-audit)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 suggest_links.py tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
