@@ -1,31 +1,54 @@
-# citation-check
+# Local citation search link generator: citation-check
 
-A command-line generator for local-business directory search links.
+Citation-check generates directory search links for local search teams. Use those links to inspect listings and compare business details manually.
 
-It opens no listings and makes no claim that a citation exists. Use the generated
-links to inspect each directory and compare the listing's name, address, and
-phone number with the canonical values you supplied.
+[Project page](https://scalewithsearch.com/code/citation-check)
 
-## Principle cluster
+## Install
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it
-returns manual-review links instead of treating a generic HTTP response as
-proof that a business listing exists.
-
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-./directory-search-links --name "Example Co" --city "Raleigh NC"
+gh repo clone b2bvic/citation-check
+cd citation-check
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+## Quick start
+
+```bash
+.venv/bin/python directory-search-links --name "Example business" --city "Example City" --json-output
+```
+
+The command generates links without fetching directory listings.
+
+## How it works
+
+- Run the directory-search-links command included in this repository.
+- Encode supplied business and location terms into directory URLs.
+- Label each link as requiring manual review.
+
+## Limits
+
+- The tool does not open or inspect directory listings.
+- A generated link does not prove that a listing exists.
+- Supplied contact details are not independently verified.
+
+## Related repositories
+
+- [gbp-audit](https://github.com/b2bvic/gbp-audit)
+- [schema-health](https://github.com/b2bvic/schema-health)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 directory-search-links tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
