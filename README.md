@@ -1,31 +1,59 @@
-# hipaa-meta
+# Healthcare metadata privacy review tool: hipaa-meta
 
-A command-line heuristic that flags possible identifiers in healthcare-page
-metadata for human privacy review.
+Hipaa-meta flags possible identifiers for developers and healthcare content reviewers. Use its HTML findings to select metadata for human privacy review.
 
-This is not a HIPAA compliance tool, legal opinion, PHI determination, or
-substitute for review by qualified privacy and security professionals.
+[Project page](https://scalewithsearch.com/code/hipaa-meta)
 
-## Principle cluster
+## Install
 
-This repository demonstrates **P06 (evidence outranks fluency)** and **P09
-(agency is governed)** because it reports the exact pattern and location that
-triggered review without claiming that a regex match proves a HIPAA violation.
-
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-./hipaa-meta https://example.com
+gh repo clone b2bvic/hipaa-meta
+cd hipaa-meta
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+## Quick start
+
+```bash
+.venv/bin/python - <<'PY'
+import runpy
+tool = runpy.run_path('hipaa-meta')
+print(tool["check_meta_tags"](__import__("bs4").BeautifulSoup('<meta name="description" content="demo@example.com">', "lxml"), "https://example.com"))
+PY
+```
+
+This example uses synthetic input without fetching a website.
+
+## How it works
+
+- Match identifier patterns in metadata and image alt text.
+- Check selected URL query parameter names.
+- Inspect review JSON-LD for configured identifier patterns.
+
+## Limits
+
+- Pattern matches can produce false positives or miss identifiers.
+- The tool makes no compliance or legal determination.
+- Returned findings can contain sensitive source text.
+
+## Related repositories
+
+- [sitemap-check](https://github.com/b2bvic/sitemap-check)
+- [redirect-trace](https://github.com/b2bvic/redirect-trace)
+- [internal-link-audit](https://github.com/b2bvic/internal-link-audit)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 hipaa-meta tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
