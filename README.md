@@ -1,6 +1,6 @@
 # Open Graph meta tag checker: og-check
 
-Og-check extracts social metadata for developers and content teams. Use its field checklist to review sharing markup before publishing a page.
+`og-check` extracts social metadata for developers and content teams. Use its field checklist to review sharing markup before publishing a page.
 
 [Project page](https://scalewithsearch.com/code/og-check)
 
