@@ -1,25 +1,59 @@
-# alt-audit
+# Image alt text checker CLI: alt-audit
 
-A command-line image alt-text checker for search and accessibility review.
+Alt-audit classifies image alt attributes for developers and search teams. Use its HTML findings to select images for accessibility review.
 
-## Principle cluster
+[Project page](https://scalewithsearch.com/code/alt-audit)
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it classifies missing, empty, generic, short, and long alt values for the images on a page.
+## Install
 
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-./alt-audit https://example.com
+gh repo clone b2bvic/alt-audit
+cd alt-audit
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+## Quick start
+
+```bash
+.venv/bin/python - <<'PY'
+import runpy
+tool = runpy.run_path('alt-audit')
+print(tool["audit_images"]('<img src="demo.png" alt="">', "https://example.com"))
+PY
+```
+
+This example uses synthetic input without fetching a website.
+
+## How it works
+
+- Distinguish missing, empty, generic, short, and long alt values.
+- Report whether width and height attributes are present.
+- Return image records as JSON when requested.
+
+## Limits
+
+- Empty alt text can be appropriate for decorative images.
+- Length thresholds are project heuristics.
+- The tool does not determine whether a description represents an image correctly.
+
+## Related repositories
+
+- [sitemap-check](https://github.com/b2bvic/sitemap-check)
+- [redirect-trace](https://github.com/b2bvic/redirect-trace)
+- [internal-link-audit](https://github.com/b2bvic/internal-link-audit)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 alt-audit tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
