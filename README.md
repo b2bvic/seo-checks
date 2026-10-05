@@ -1,6 +1,6 @@
 # Restaurant menu SEO checker: menu-seo
 
-Menu-seo inspects restaurant page markup for developers and content teams. Use its HTML findings to select menu content for review.
+`menu-seo` inspects restaurant page markup for developers and content teams. Use its HTML findings to select menu content for review.
 
 [Project page](https://scalewithsearch.com/code/menu-seo)
 
