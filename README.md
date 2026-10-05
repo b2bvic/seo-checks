@@ -1,6 +1,6 @@
 # Course JSON-LD checklist CLI: course-schema
 
-Course-schema checks Course and ItemList JSON-LD for developers and education content teams. Use its field profiles to select markup for review.
+`course-schema` checks Course and ItemList JSON-LD for developers and education content teams. Use its field profiles to select markup for review.
 
 [Project page](https://scalewithsearch.com/code/course-schema)
 
