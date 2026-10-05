@@ -1,6 +1,6 @@
 # Product JSON-LD field checker: product-schema
 
-Product-schema checks Product JSON-LD fields for developers and search teams. Use its checklist to review structured data before changing product pages.
+`product-schema` checks Product JSON-LD fields for developers and search teams. Use its checklist to review structured data before changing product pages.
 
 [Project page](https://scalewithsearch.com/code/product-schema)
 
