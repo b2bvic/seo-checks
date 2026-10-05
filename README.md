@@ -1,6 +1,6 @@
 # Flesch readability scorer CLI: readability
 
-Readability estimates reading difficulty for writers and search teams. Use its text statistics to find passages that need editorial review.
+`readability` estimates reading difficulty for writers and search teams. Use its text statistics to find passages that need editorial review.
 
 [Project page](https://scalewithsearch.com/code/readability)
 
