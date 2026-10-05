@@ -1,6 +1,6 @@
 # Healthcare metadata privacy review tool: hipaa-meta
 
-Hipaa-meta flags possible identifiers for developers and healthcare content reviewers. Use its HTML findings to select metadata for human privacy review.
+`hipaa-meta` flags possible identifiers for developers and healthcare content reviewers. Use its HTML findings to select metadata for human privacy review.
 
 [Project page](https://scalewithsearch.com/code/hipaa-meta)
 
