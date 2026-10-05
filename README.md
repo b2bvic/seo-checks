@@ -1,25 +1,54 @@
-# sws-skills
+# Claude Code SEO content skills: sws-skills
 
-A collection of portable agent skills for content and search workflows.
+Sws-skills contains Markdown prompts for content teams using Claude Code. These are patterns a team can adapt for hosted-model writing and search workflows.
 
-## Principle cluster
+[Project page](https://scalewithsearch.com/code/sws-skills)
 
-This repository demonstrates **P08 (build a modular person-system)** and **P11 (voice is a written standard)** because the collection covers output checks, page conversion, scripts, freshness, metadata, and overlap analysis.
+## Install
 
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-cp -r sws-skills/skills/anti-slop ~/.claude/skills/
+gh repo clone b2bvic/sws-skills
+cd sws-skills
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+## Quick start
+
+```bash
+.venv/bin/python -m pytest -q
+```
+
+These checks use synthetic input and perform no live sends.
+
+## How it works
+
+- Read prompts for freshness review, metadata editing, overlap analysis, and video scripts.
+- Use the web2md prompt for page conversion instructions.
+- Use anti-slop as a written output-review checklist.
+
+## Limits
+
+- The repository contains instructions rather than an automated SEO runtime.
+- Skills require the tools and source access named in each prompt.
+- Generated findings need human review.
+
+## Related repositories
+
+- [web2md](https://github.com/b2bvic/web2md)
+- [twitter-bookmarks](https://github.com/b2bvic/twitter-bookmarks)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
