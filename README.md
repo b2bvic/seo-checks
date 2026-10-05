@@ -1,6 +1,6 @@
 # Sitemap thin content checker: thin-product
 
-Thin-product counts page words for developers and search teams. Use its sitemap sample to select low-content pages for review.
+`thin-product` counts page words for developers and search teams. Use its sitemap sample to select low-content pages for review.
 
 [Project page](https://scalewithsearch.com/code/thin-product)
 
