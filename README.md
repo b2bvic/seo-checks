@@ -1,6 +1,6 @@
 # Product specification SEO checker: spec-sheet
 
-Spec-sheet inspects product specification markup for developers and manufacturing content teams. Use its page findings to review technical content before editing it.
+`spec-sheet` inspects product specification markup for developers and manufacturing content teams. Use its page findings to review technical content before editing it.
 
 [Project page](https://scalewithsearch.com/code/spec-sheet)
 
