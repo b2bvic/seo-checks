@@ -1,6 +1,6 @@
 # Internal link audit CLI: internal-link-audit
 
-Internal-link-audit counts observed links for developers and search teams. Use its bounded sitemap crawl to find pages that need link review.
+`internal-link-audit` counts observed links for developers and search teams. Use its bounded sitemap crawl to find pages that need link review.
 
 [Project page](https://scalewithsearch.com/code/internal-link-audit)
 
