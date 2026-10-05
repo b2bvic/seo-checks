@@ -1,6 +1,6 @@
 # XML sitemap validator CLI: sitemap-check
 
-Sitemap-check parses XML sitemaps for search teams and developers. Use its bounded URL checks to inspect crawl inputs before changing a website.
+`sitemap-check` parses XML sitemaps for search teams and developers. Use its bounded URL checks to inspect crawl inputs before changing a website.
 
 [Project page](https://scalewithsearch.com/code/sitemap-check)
 
