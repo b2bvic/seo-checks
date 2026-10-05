@@ -1,6 +1,6 @@
 # Robots.txt validator CLI: robots-check
 
-Robots-check inspects robots.txt directives for developers and search teams. Use its findings to review crawler configuration before editing a website.
+`robots-check` inspects robots.txt directives for developers and search teams. Use its findings to review crawler configuration before editing a website.
 
 [Project page](https://scalewithsearch.com/code/robots-check)
 
