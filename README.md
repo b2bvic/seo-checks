@@ -1,6 +1,6 @@
 # Image alt text checker CLI: alt-audit
 
-Alt-audit classifies image alt attributes for developers and search teams. Use its HTML findings to select images for accessibility review.
+`alt-audit` classifies image alt attributes for developers and search teams. Use its HTML findings to select images for accessibility review.
 
 [Project page](https://scalewithsearch.com/code/alt-audit)
 
