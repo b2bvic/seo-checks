@@ -1,6 +1,6 @@
 # Local business website audit CLI: gbp-audit
 
-Gbp-audit checks public website markup for developers and local search teams. Use its LocalBusiness fields and visible page signals to select content for review.
+`gbp-audit` checks public website markup for developers and local search teams. Use its LocalBusiness fields and visible page signals to select content for review.
 
 [Project page](https://scalewithsearch.com/code/gbp-audit)
 
