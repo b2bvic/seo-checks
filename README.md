@@ -1,6 +1,6 @@
 # Claude Code SEO content skills: sws-skills
 
-Sws-skills contains Markdown prompts for content teams using Claude Code. These are patterns a team can adapt for hosted-model writing and search workflows.
+`sws-skills` contains Markdown prompts for content teams using Claude Code. These are patterns a team can adapt for hosted-model writing and search workflows.
 
 [Project page](https://scalewithsearch.com/code/sws-skills)
 
@@ -22,6 +22,15 @@ python3 -m venv .venv
 ```
 
 These checks use synthetic input and perform no live sends.
+
+## Usage
+
+Copy a skill folder into the Claude Code skills directory:
+
+```bash
+mkdir -p ~/.claude/skills
+cp -r skills/anti-slop ~/.claude/skills/
+```
 
 ## How it works
 
