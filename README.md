@@ -1,6 +1,6 @@
 # HTML heading hierarchy checker: heading-audit
 
-Heading-audit inspects HTML heading structure for developers and search teams. Use its findings to review an outline before changing page markup.
+`heading-audit` inspects HTML heading structure for developers and search teams. Use its findings to review an outline before changing page markup.
 
 [Project page](https://scalewithsearch.com/code/heading-audit)
 
