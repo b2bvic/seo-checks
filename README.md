@@ -1,28 +1,58 @@
-# local-page-audit
+# Local business website audit CLI: gbp-audit
 
-A command-line checker for public website content and LocalBusiness JSON-LD.
-It does not connect to, inspect, or score a Google Business Profile.
+Gbp-audit checks public website markup for developers and local search teams. Use its LocalBusiness fields and visible page signals to select content for review.
 
-## Principle cluster
+[Project page](https://scalewithsearch.com/code/gbp-audit)
 
-This repository demonstrates **P06 (evidence outranks fluency)** because it
-reports the website fields and page elements it can inspect while stating the
-boundary around profile data it cannot access.
+## Install
 
-[Read the principles](https://victorvalentineromo.com/principles).
-
-## Worked example
+Requirements: Python 3.11 or later.
 
 ```bash
-./local-page-audit https://example.com
+gh repo clone b2bvic/gbp-audit
+cd gbp-audit
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.txt
 ```
+
+## Quick start
+
+```bash
+.venv/bin/python - <<'PY'
+import runpy
+tool = runpy.run_path('local-page-audit')
+print(tool["audit"]("LocalBusiness", {"name": "Example"}))
+PY
+```
+
+This example uses synthetic input without fetching a website.
+
+## How it works
+
+- Run the local-page-audit command included in this repository.
+- Check configured LocalBusiness types and field profiles.
+- Look for visible contact details and an embedded map.
+
+## Limits
+
+- The tool does not connect to a Google Business Profile.
+- Field profiles and page matching are project heuristics.
+- A missing signal does not prove that business information is incorrect.
+
+## Related repositories
+
+- [citation-check](https://github.com/b2bvic/citation-check)
+- [schema-health](https://github.com/b2bvic/schema-health)
+
+## Development
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m ruff check --select E9,F63,F7,F82 local-page-audit tests
+```
+
+CI runs the portable tests and checks syntax-related Python lint rules.
 
 ## License
 
-MIT.
-
-## How this was built
-
-This 2026 README refit used model assistance.
-
-No claim is made about how the underlying code was authored or reviewed.
+MIT. See [LICENSE](LICENSE).
