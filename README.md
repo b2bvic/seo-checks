@@ -1,6 +1,6 @@
 # Healthcare JSON-LD field checker: schema-health
 
-Schema-health checks selected healthcare JSON-LD types for developers and content teams. Use its field profiles to inspect missing structured data.
+`schema-health` checks selected healthcare JSON-LD types for developers and content teams. Use its field profiles to inspect missing structured data.
 
 [Project page](https://scalewithsearch.com/code/schema-health)
 
