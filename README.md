@@ -1,6 +1,6 @@
 # Word frequency analyzer CLI: word-freq
 
-Word-freq counts filtered tokens for writers and search teams. Use its term and phrase reports to inspect repetition in content.
+`word-freq` counts filtered tokens for writers and search teams. Use its term and phrase reports to inspect repetition in content.
 
 [Project page](https://scalewithsearch.com/code/word-freq)
 
