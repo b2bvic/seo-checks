@@ -13,6 +13,7 @@ Detects chains, loops, mixed HTTP/HTTPS, and status codes at each hop.
 
 import json
 import sys
+from urllib.parse import urljoin
 
 import click
 import requests
@@ -49,11 +50,7 @@ def trace(url, max_hops=20):
                 hop["detail"] = "Redirect with no Location header"
                 chain.append(hop)
                 break
-            # Handle relative redirects
-            if location.startswith("/"):
-                from urllib.parse import urlparse
-                parsed = urlparse(current)
-                location = f"{parsed.scheme}://{parsed.netloc}{location}"
+            location = urljoin(current, location)
             hop["redirects_to"] = location
             chain.append(hop)
             current = location
