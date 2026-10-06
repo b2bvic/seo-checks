@@ -1,0 +1,88 @@
+#!/usr/bin/env -S uv run --script --with click --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0"]
+# ///
+"""directory-search-links — Local business directory search-link generator.
+
+Builds search URLs for major directories so a human can inspect listings and
+compare their name, address, and phone values. It does not extract listings or
+claim that a citation exists.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+from urllib.parse import quote_plus
+
+import click
+
+DIRECTORIES = [
+    {"name": "Yelp", "search": "https://www.yelp.com/search?find_desc={query}&find_loc={location}"},
+    {"name": "BBB", "search": "https://www.bbb.org/search?find_text={query}&find_loc={location}"},
+    {"name": "Yellow Pages", "search": "https://www.yellowpages.com/search?search_terms={query}&geo_location_terms={location}"},
+]
+
+
+def directory_search_link(directory, query, location):
+    """Return a directory search URL that still requires human review."""
+    url = directory["search"].format(query=quote_plus(query), location=quote_plus(location))
+    return {
+        "name": directory["name"],
+        "url": url,
+        "status": "manual_review_required",
+    }
+
+
+@click.command()
+@click.option("--name", "-n", required=True, help="Business name")
+@click.option("--address", "-a", default="", help="Business street address")
+@click.option("--city", "-c", required=True, help="City and state (e.g., 'Raleigh NC')")
+@click.option("--phone", "-p", default="", help="Business phone number")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(name, address, city, phone, json_out):
+    """Generate directory search links for manual NAP review."""
+    canonical = {
+        "name": name,
+        "address": address,
+        "city": city,
+        "phone": phone,
+    }
+
+    results = [
+        directory_search_link(directory, name, city)
+        for directory in DIRECTORIES
+    ]
+
+    if json_out:
+        print(json.dumps({
+            "business": canonical,
+            "directories": results,
+            "limitation": "Generated search URLs require manual listing and NAP verification.",
+        }, indent=2))
+        return
+
+    click.echo(f"\nDirectory Search Links: {name}")
+    click.echo(f"Location: {city}")
+    if phone:
+        click.echo(f"Phone: {phone}")
+    if address:
+        click.echo(f"Address: {address}")
+    click.echo()
+
+    click.echo("  Manual-review links:")
+    for r in results:
+        click.echo(f"    {r['name']}: {r['url']}")
+
+    click.echo()
+    click.echo("  These links do not prove that a listing exists.")
+    click.echo("  Inspect each result manually and confirm:")
+    click.echo("  1. Business name matches exactly")
+    click.echo("  2. Address is consistent (abbreviations, suite numbers)")
+    click.echo("  3. Phone number matches (format may vary)")
+    click.echo("  4. Website URL is correct")
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
