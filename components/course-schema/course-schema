@@ -1,0 +1,261 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""course-schema — Google Course-list and schema.org Course checker.
+
+Checks Google's documented Course-list shape separately from optional
+schema.org Course fields. It does not treat offers or tuition as Google
+eligibility requirements, and passing the markup check does not guarantee a
+rich result.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; course-schema/1.0)"
+
+GOOGLE_COURSE_REQUIRED = ("name", "description")
+GOOGLE_COURSE_RECOMMENDED = ("provider",)
+SCHEMA_ORG_COURSE_OPTIONAL = (
+    "courseCode",
+    "educationalLevel",
+    "inLanguage",
+    "offers",
+    "hasCourseInstance",
+    "numberOfCredits",
+    "occupationalCredentialAwarded",
+    "timeRequired",
+    "image",
+    "url",
+)
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def extract_schemas(html):
+    soup = BeautifulSoup(html, "lxml")
+    schemas = []
+    for tag in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(tag.string)
+            if isinstance(data, list):
+                schemas.extend(data)
+            elif isinstance(data, dict):
+                schemas.append(data)
+                if "@graph" in data:
+                    schemas.extend(data["@graph"])
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return schemas
+
+
+def has_type(data, expected):
+    """Return whether @type contains the expected schema type."""
+    schema_type = data.get("@type")
+    if isinstance(schema_type, list):
+        return expected in schema_type
+    return schema_type == expected
+
+
+def present(data, field):
+    """Treat non-empty strings, objects, and arrays as present."""
+    value = data.get(field)
+    return value is not None and value != "" and value != [] and value != {}
+
+
+def audit_course(data, label):
+    """Check Google Course properties and separate schema.org suggestions."""
+    google_errors = [
+        f"{label}.{field}: required by Google's Course-list contract"
+        for field in GOOGLE_COURSE_REQUIRED
+        if not present(data, field)
+    ]
+    google_warnings = [
+        f"{label}.{field}: recommended by Google"
+        for field in GOOGLE_COURSE_RECOMMENDED
+        if not present(data, field)
+    ]
+    schema_org_optional_absent = [
+        field for field in SCHEMA_ORG_COURSE_OPTIONAL if not present(data, field)
+    ]
+    return {
+        "label": label,
+        "name": data.get("name", "unnamed"),
+        "google_errors": google_errors,
+        "google_warnings": google_warnings,
+        "schema_org_optional_absent": schema_org_optional_absent,
+    }
+
+
+def audit_item_list(data, index):
+    """Check the page-level ItemList and any nested Course objects."""
+    label = f"ItemList[{index}]"
+    errors = []
+    warnings = []
+    course_checks = []
+    entries = data.get("itemListElement")
+    if not isinstance(entries, list):
+        return {
+            "label": label,
+            "google_errors": [f"{label}.itemListElement: required array"],
+            "google_warnings": [],
+            "course_checks": [],
+        }
+    if len(entries) < 3:
+        errors.append(
+            f"{label}.itemListElement: Google Course lists require at least three courses"
+        )
+
+    positions = []
+    urls = []
+    for item_index, entry in enumerate(entries):
+        item_label = f"{label}.itemListElement[{item_index}]"
+        if not isinstance(entry, dict):
+            errors.append(f"{item_label}: expected ListItem object")
+            continue
+        if not has_type(entry, "ListItem"):
+            errors.append(f"{item_label}.@type: expected ListItem")
+
+        position = entry.get("position")
+        if isinstance(position, bool) or not isinstance(position, int) or position < 1:
+            errors.append(f"{item_label}.position: required positive integer")
+        else:
+            positions.append(position)
+
+        nested = entry.get("item")
+        nested = nested if isinstance(nested, dict) else {}
+        item_url = entry.get("url") or nested.get("url")
+        if not isinstance(item_url, str) or not item_url.strip():
+            errors.append(f"{item_label}.url: required canonical URL")
+        else:
+            urls.append(item_url.strip())
+
+        if nested and has_type(nested, "Course"):
+            course_checks.append(audit_course(nested, f"{item_label}.item"))
+
+    if len(positions) != len(set(positions)):
+        errors.append(f"{label}: ListItem.position values must be unique")
+    if len(urls) != len(set(urls)):
+        errors.append(f"{label}: ListItem.url values must be unique")
+    if not course_checks:
+        warnings.append(
+            f"{label}: list shape checked; validate Course properties on the linked detail pages"
+        )
+
+    return {
+        "label": label,
+        "google_errors": errors,
+        "google_warnings": warnings,
+        "course_checks": course_checks,
+    }
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Check the current Google Course-list markup contract."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    schemas = extract_schemas(html)
+    courses = [schema for schema in schemas if has_type(schema, "Course")]
+    item_lists = [schema for schema in schemas if has_type(schema, "ItemList")]
+    course_checks = [
+        audit_course(course, f"Course[{index}]")
+        for index, course in enumerate(courses)
+    ]
+    item_list_checks = [
+        audit_item_list(item_list, index)
+        for index, item_list in enumerate(item_lists)
+    ]
+    for item_list in item_list_checks:
+        course_checks.extend(item_list["course_checks"])
+
+    google_errors = [
+        error
+        for check in item_list_checks
+        for error in check["google_errors"]
+    ]
+    google_warnings = [
+        warning
+        for check in item_list_checks
+        for warning in check["google_warnings"]
+    ]
+    for check in course_checks:
+        google_errors.extend(check["google_errors"])
+        google_warnings.extend(check["google_warnings"])
+    if not item_lists:
+        google_errors.append(
+            "Page: Google Course-list markup requires an ItemList with at least three courses"
+        )
+
+    status = "pass" if not google_errors else "fail"
+    report = {
+        "url": url,
+        "google_course_list_contract": {
+            "status": status,
+            "errors": google_errors,
+            "warnings": google_warnings,
+        },
+        "item_list_checks": item_list_checks,
+        "course_checks": course_checks,
+        "limitation": (
+            "Passing checks the documented markup shape only. It does not "
+            "guarantee indexing or a Google rich result."
+        ),
+    }
+
+    if json_out:
+        print(json.dumps(report, indent=2))
+        if google_errors:
+            sys.exit(1)
+        return
+
+    click.echo(f"\nGoogle Course-list Markup Check: {url}\n")
+    if not schemas:
+        click.echo("  No JSON-LD objects found.")
+    elif not courses and not item_lists:
+        all_types = [s.get("@type", "unknown") for s in schemas]
+        click.echo("  No Course or ItemList JSON-LD found.")
+        click.echo(f"  Found types: {', '.join(str(t) for t in all_types)}")
+
+    click.echo(f"  Contract status: {status.upper()}")
+    for error in google_errors:
+        click.echo(f"  ERROR: {error}")
+    for warning in google_warnings:
+        click.echo(f"  WARNING: {warning}")
+
+    if course_checks:
+        click.echo("\n  Schema.org completeness notes:")
+        for check in course_checks:
+            absent = check["schema_org_optional_absent"]
+            if absent:
+                click.echo(f"    {check['label']}: optional fields absent: {', '.join(absent)}")
+            else:
+                click.echo(f"    {check['label']}: configured optional fields present")
+
+    click.echo(
+        "\n  Passing this check does not guarantee indexing or a Google rich result.\n"
+    )
+    if google_errors:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
