@@ -1,0 +1,108 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with beautifulsoup4 --with lxml --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "beautifulsoup4>=4.12", "lxml>=5.0", "certifi"]
+# ///
+"""heading-audit — HTML heading hierarchy checker.
+
+Validates H1-H6 structure: single H1, sequential nesting, no skipped
+levels. Broken heading hierarchy hurts SEO and accessibility.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+
+import click
+import requests
+from bs4 import BeautifulSoup
+
+UA = "Mozilla/5.0 (compatible; heading-audit/1.0)"
+
+
+def fetch(url):
+    resp = requests.get(url, timeout=20, headers={"User-Agent": UA})
+    resp.raise_for_status()
+    return resp.text
+
+
+def audit_headings(html):
+    soup = BeautifulSoup(html, "lxml")
+    headings = []
+    for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
+        level = int(tag.name[1])
+        text = tag.get_text(strip=True)[:80]
+        headings.append({"level": level, "tag": tag.name, "text": text})
+
+    issues = []
+    h1_count = sum(1 for h in headings if h["level"] == 1)
+
+    if h1_count == 0:
+        issues.append({"severity": "HIGH", "detail": "No H1 tag found. Every page needs exactly one H1."})
+    elif h1_count > 1:
+        issues.append({"severity": "HIGH", "detail": f"Multiple H1 tags ({h1_count}). Use exactly one H1 per page."})
+
+    # Check sequential nesting
+    prev_level = 0
+    for i, h in enumerate(headings):
+        if h["level"] > prev_level + 1 and prev_level > 0:
+            issues.append({"severity": "MEDIUM",
+                          "detail": f"Skipped heading level: H{prev_level} → H{h['level']} ('{h['text'][:40]}'). Don't skip H{prev_level + 1}."})
+        prev_level = h["level"]
+
+    # Check for empty headings
+    for h in headings:
+        if not h["text"]:
+            issues.append({"severity": "MEDIUM", "detail": f"Empty {h['tag'].upper()} tag"})
+
+    # Check first heading is H1
+    if headings and headings[0]["level"] != 1:
+        issues.append({"severity": "MEDIUM", "detail": f"First heading is H{headings[0]['level']}, not H1"})
+
+    return headings, issues
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Check heading hierarchy (H1-H6) for SEO and accessibility."""
+    try:
+        html = fetch(url)
+    except Exception as e:
+        click.echo(f"Error fetching {url}: {e}", err=True)
+        sys.exit(1)
+
+    headings, issues = audit_headings(html)
+
+    if json_out:
+        print(json.dumps({"url": url, "headings": headings, "issues": issues}, indent=2))
+        return
+
+    click.echo(f"\nHeading Audit: {url}\n")
+    click.echo(f"  Headings found: {len(headings)}\n")
+
+    for h in headings:
+        indent = "  " * h["level"]
+        click.echo(f"  {indent}{h['tag'].upper()}: {h['text']}")
+    click.echo()
+
+    if issues:
+        high = [i for i in issues if i["severity"] == "HIGH"]
+        medium = [i for i in issues if i["severity"] == "MEDIUM"]
+        if high:
+            click.echo(f"  HIGH ({len(high)}):")
+            for i in high:
+                click.echo(f"    {i['detail']}")
+        if medium:
+            click.echo(f"  MEDIUM ({len(medium)}):")
+            for i in medium:
+                click.echo(f"    {i['detail']}")
+    else:
+        click.echo("  Heading structure is correct.")
+    click.echo()
+
+
+if __name__ == "__main__":
+    main()
