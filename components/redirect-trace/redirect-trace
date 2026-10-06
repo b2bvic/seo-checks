@@ -1,0 +1,117 @@
+#!/usr/bin/env -S uv run --script --with click --with requests --with certifi --python 3.11 --quiet
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["click>=8.0", "requests>=2.31", "certifi"]
+# ///
+"""redirect-trace — Follow and report redirect chains.
+
+Traces the full redirect path from a URL to its final destination.
+Detects chains, loops, mixed HTTP/HTTPS, and status codes at each hop.
+
+🌐 Victor Valentine Romo · victorvalentineromo.com · scalewithsearch.com
+"""
+
+import json
+import sys
+from urllib.parse import urljoin
+
+import click
+import requests
+
+UA = "Mozilla/5.0 (compatible; redirect-trace/1.0)"
+
+
+def trace(url, max_hops=20):
+    chain = []
+    current = url
+    seen = set()
+
+    for _ in range(max_hops):
+        if current in seen:
+            chain.append({"url": current, "status": "LOOP", "detail": "Redirect loop detected"})
+            break
+        seen.add(current)
+
+        try:
+            resp = requests.head(current, timeout=10, headers={"User-Agent": UA},
+                                allow_redirects=False)
+        except requests.exceptions.SSLError:
+            chain.append({"url": current, "status": "SSL_ERROR", "detail": "SSL certificate error"})
+            break
+        except Exception as e:
+            chain.append({"url": current, "status": "ERROR", "detail": str(e)})
+            break
+
+        hop = {"url": current, "status": resp.status_code}
+
+        if resp.is_redirect or resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("Location", "")
+            if not location:
+                hop["detail"] = "Redirect with no Location header"
+                chain.append(hop)
+                break
+            location = urljoin(current, location)
+            hop["redirects_to"] = location
+            chain.append(hop)
+            current = location
+        else:
+            chain.append(hop)
+            break
+
+    return chain
+
+
+@click.command()
+@click.argument("url")
+@click.option("--json-output", "json_out", is_flag=True)
+def main(url, json_out):
+    """Trace redirect chain from URL to final destination."""
+    chain = trace(url)
+
+    issues = []
+    if len(chain) > 2:
+        issues.append({"severity": "WARNING", "detail": f"Redirect chain: {len(chain)} hops (recommend max 1-2)"})
+
+    # Check for HTTP→HTTPS or HTTPS→HTTP
+    for i in range(len(chain) - 1):
+        cur = chain[i]["url"]
+        nxt = chain[i].get("redirects_to", "")
+        if cur.startswith("https://") and nxt.startswith("http://"):
+            issues.append({"severity": "HIGH", "detail": f"HTTPS downgrade: {cur[:50]} → http://"})
+        if cur.startswith("http://") and nxt.startswith("http://") and i > 0:
+            issues.append({"severity": "MEDIUM", "detail": f"Intermediate hop still on HTTP"})
+
+    # Check for loops
+    if chain and chain[-1].get("status") == "LOOP":
+        issues.append({"severity": "CRITICAL", "detail": "Redirect loop detected"})
+
+    # Check final status
+    if chain:
+        final = chain[-1]
+        if final["status"] not in (200, "LOOP", "ERROR", "SSL_ERROR"):
+            issues.append({"severity": "WARNING", "detail": f"Final status is {final['status']}, not 200"})
+
+    if json_out:
+        print(json.dumps({"url": url, "chain": chain, "hops": len(chain), "issues": issues}, indent=2))
+        return
+
+    click.echo(f"\nRedirect Trace: {url}\n")
+    for i, hop in enumerate(chain):
+        status = hop["status"]
+        prefix = "→" if i > 0 else " "
+        click.echo(f"  {prefix} [{status}] {hop['url'][:80]}")
+        if hop.get("detail"):
+            click.echo(f"          {hop['detail']}")
+
+    click.echo(f"\n  Hops: {len(chain)}")
+    click.echo(f"  Final: {chain[-1]['url'][:80]}" if chain else "  No response")
+    click.echo()
+
+    if issues:
+        for i in issues:
+            click.echo(f"  [{i['severity']}] {i['detail']}")
+        click.echo()
+
+
+if __name__ == "__main__":
+    main()
