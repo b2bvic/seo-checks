@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seo-checks"
+version = "0.1.0"
+description = "CLI tools for sitemap, metadata, content, and structured data checks."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Victor Valentine Romo"}]
+dependencies = [
+  "click==8.5.0",
+  "requests==2.34.2",
+  "beautifulsoup4==4.15.0",
+  "lxml==6.1.3",
+  "certifi",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1", "ruff==0.16.10"]
+link-suggest = ["torch==2.14.1", "transformers==5.18.0", "rapidfuzz==3.14.6"]
+
+[project.scripts]
+seo-checks = "seo_checks:main"
+
+[project.urls]
+Homepage = "https://scalewithsearch.com/code/seo-checks"
+Repository = "https://github.com/b2bvic/seo-checks"
+
+[tool.setuptools]
+py-modules = ["seo_checks"]
+
+[tool.setuptools.data-files]
+"share/seo-checks/sitemap-check" = ["components/sitemap-check/sitemap-check", "components/sitemap-check/README.md", "components/sitemap-check/LICENSE"]
+"share/seo-checks/robots-check" = ["components/robots-check/robots-check", "components/robots-check/README.md", "components/robots-check/LICENSE"]
+"share/seo-checks/redirect-trace" = ["components/redirect-trace/redirect-trace", "components/redirect-trace/README.md", "components/redirect-trace/LICENSE"]
+"share/seo-checks/heading-audit" = ["components/heading-audit/heading-audit", "components/heading-audit/README.md", "components/heading-audit/LICENSE"]
+"share/seo-checks/alt-audit" = ["components/alt-audit/alt-audit", "components/alt-audit/README.md", "components/alt-audit/LICENSE"]
+"share/seo-checks/og-check" = ["components/og-check/og-check", "components/og-check/README.md", "components/og-check/LICENSE"]
+"share/seo-checks/readability" = ["components/readability/readability", "components/readability/README.md", "components/readability/LICENSE"]
+"share/seo-checks/word-freq" = ["components/word-freq/word-freq", "components/word-freq/README.md", "components/word-freq/LICENSE"]
+"share/seo-checks/internal-link-audit" = ["components/internal-link-audit/internal-link-audit", "components/internal-link-audit/README.md", "components/internal-link-audit/LICENSE"]
+"share/seo-checks/thin-product" = ["components/thin-product/thin-product", "components/thin-product/README.md", "components/thin-product/LICENSE"]
+"share/seo-checks/link-suggest" = ["components/link-suggest/suggest_links.py", "components/link-suggest/README.md", "components/link-suggest/LICENSE", "components/link-suggest/requirements.txt"]
+"share/seo-checks/citation-check" = ["components/citation-check/directory-search-links", "components/citation-check/README.md", "components/citation-check/LICENSE"]
+"share/seo-checks/gbp-audit" = ["components/gbp-audit/local-page-audit", "components/gbp-audit/README.md", "components/gbp-audit/LICENSE"]
+"share/seo-checks/product-schema" = ["components/product-schema/product-schema", "components/product-schema/README.md", "components/product-schema/LICENSE"]
+"share/seo-checks/course-schema" = ["components/course-schema/course-schema", "components/course-schema/README.md", "components/course-schema/LICENSE"]
+"share/seo-checks/schema-health" = ["components/schema-health/schema-health", "components/schema-health/README.md", "components/schema-health/LICENSE"]
+"share/seo-checks/hipaa-meta" = ["components/hipaa-meta/hipaa-meta", "components/hipaa-meta/README.md", "components/hipaa-meta/LICENSE"]
+"share/seo-checks/menu-seo" = ["components/menu-seo/menu-seo", "components/menu-seo/README.md", "components/menu-seo/LICENSE"]
+"share/seo-checks/spec-sheet" = ["components/spec-sheet/spec-sheet", "components/spec-sheet/README.md", "components/spec-sheet/LICENSE"]
+"share/seo-checks/saas-onboard" = ["components/saas-onboard/saas-onboard", "components/saas-onboard/README.md", "components/saas-onboard/LICENSE"]
+"share/seo-checks/prompts" = ["prompts/README.md", "prompts/LICENSE"]
+"share/seo-checks/prompts/skills/anti-slop" = ["prompts/skills/anti-slop/SKILL.md"]
+"share/seo-checks/prompts/skills/cannibalize" = ["prompts/skills/cannibalize/SKILL.md"]
+"share/seo-checks/prompts/skills/content-refresh" = ["prompts/skills/content-refresh/SKILL.md"]
+"share/seo-checks/prompts/skills/meta-optimize" = ["prompts/skills/meta-optimize/SKILL.md"]
+"share/seo-checks/prompts/skills/video-script" = ["prompts/skills/video-script/SKILL.md"]
+"share/seo-checks/prompts/skills/web2md" = ["prompts/skills/web2md/SKILL.md"]

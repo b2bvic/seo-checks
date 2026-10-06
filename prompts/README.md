@@ -2,15 +2,16 @@
 
 `sws-skills` contains Markdown prompts for content teams using Claude Code. These are patterns a team can adapt for hosted-model writing and search workflows.
 
-[Project page](https://scalewithsearch.com/code/sws-skills)
+[Project page](https://scalewithsearch.com/code/seo-checks#sws-skills)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/sws-skills
-cd sws-skills
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd prompts
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

@@ -2,15 +2,16 @@
 
 `og-check` extracts social metadata for developers and content teams. Use its field checklist to review sharing markup before publishing a page.
 
-[Project page](https://scalewithsearch.com/code/og-check)
+[Project page](https://scalewithsearch.com/code/seo-checks#og-check)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/og-check
-cd og-check
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/og-check
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

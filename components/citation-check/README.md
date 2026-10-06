@@ -2,15 +2,16 @@
 
 `citation-check` generates directory search links for local search teams. Use those links to inspect listings and compare business details manually.
 
-[Project page](https://scalewithsearch.com/code/citation-check)
+[Project page](https://scalewithsearch.com/code/seo-checks#citation-check)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/citation-check
-cd citation-check
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/citation-check
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

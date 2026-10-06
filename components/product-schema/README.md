@@ -2,15 +2,16 @@
 
 `product-schema` checks Product JSON-LD fields for developers and search teams. Use its checklist to review structured data before changing product pages.
 
-[Project page](https://scalewithsearch.com/code/product-schema)
+[Project page](https://scalewithsearch.com/code/seo-checks#product-schema)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/product-schema
-cd product-schema
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/product-schema
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

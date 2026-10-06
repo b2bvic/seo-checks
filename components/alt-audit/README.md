@@ -2,15 +2,16 @@
 
 `alt-audit` classifies image alt attributes for developers and search teams. Use its HTML findings to select images for accessibility review.
 
-[Project page](https://scalewithsearch.com/code/alt-audit)
+[Project page](https://scalewithsearch.com/code/seo-checks#alt-audit)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/alt-audit
-cd alt-audit
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/alt-audit
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

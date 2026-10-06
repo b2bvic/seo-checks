@@ -2,15 +2,16 @@
 
 `gbp-audit` checks public website markup for developers and local search teams. Use its LocalBusiness fields and visible page signals to select content for review.
 
-[Project page](https://scalewithsearch.com/code/gbp-audit)
+[Project page](https://scalewithsearch.com/code/seo-checks#gbp-audit)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/gbp-audit
-cd gbp-audit
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/gbp-audit
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

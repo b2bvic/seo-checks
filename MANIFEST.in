@@ -1,0 +1,8 @@
+include LICENSE README.md
+recursive-include components *
+recursive-include prompts *
+recursive-include scripts *.py
+recursive-include tests *.py
+global-exclude __pycache__ *.py[cod]
+prune .test-results
+prune .model-cache

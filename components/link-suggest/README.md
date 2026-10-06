@@ -2,15 +2,16 @@
 
 `link-suggest` generates anchor candidates for editors and search teams. Use its token-classification output to select possible internal links for review.
 
-[Project page](https://scalewithsearch.com/code/link-suggest)
+[Project page](https://scalewithsearch.com/code/seo-checks#link-suggest)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/link-suggest
-cd link-suggest
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/link-suggest
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

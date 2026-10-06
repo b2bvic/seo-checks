@@ -2,15 +2,16 @@
 
 `heading-audit` inspects HTML heading structure for developers and search teams. Use its findings to review an outline before changing page markup.
 
-[Project page](https://scalewithsearch.com/code/heading-audit)
+[Project page](https://scalewithsearch.com/code/seo-checks#heading-audit)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/heading-audit
-cd heading-audit
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/heading-audit
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

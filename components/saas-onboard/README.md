@@ -2,15 +2,16 @@
 
 `saas-onboard` inspects website markup for developers and software content teams. Use its page checks to review indexing directives and canonical paths.
 
-[Project page](https://scalewithsearch.com/code/saas-onboard)
+[Project page](https://scalewithsearch.com/code/seo-checks#saas-onboard)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/saas-onboard
-cd saas-onboard
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/saas-onboard
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

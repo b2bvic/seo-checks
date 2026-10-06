@@ -2,15 +2,16 @@
 
 `readability` estimates reading difficulty for writers and search teams. Use its text statistics to find passages that need editorial review.
 
-[Project page](https://scalewithsearch.com/code/readability)
+[Project page](https://scalewithsearch.com/code/seo-checks#readability)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/readability
-cd readability
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/readability
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

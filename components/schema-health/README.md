@@ -2,15 +2,16 @@
 
 `schema-health` checks selected healthcare JSON-LD types for developers and content teams. Use its field profiles to inspect missing structured data.
 
-[Project page](https://scalewithsearch.com/code/schema-health)
+[Project page](https://scalewithsearch.com/code/seo-checks#schema-health)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/schema-health
-cd schema-health
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/schema-health
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

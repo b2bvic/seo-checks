@@ -2,15 +2,16 @@
 
 `course-schema` checks Course and ItemList JSON-LD for developers and education content teams. Use its field profiles to select markup for review.
 
-[Project page](https://scalewithsearch.com/code/course-schema)
+[Project page](https://scalewithsearch.com/code/seo-checks#course-schema)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/course-schema
-cd course-schema
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/course-schema
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

@@ -2,15 +2,16 @@
 
 `robots-check` inspects robots.txt directives for developers and search teams. Use its findings to review crawler configuration before editing a website.
 
-[Project page](https://scalewithsearch.com/code/robots-check)
+[Project page](https://scalewithsearch.com/code/seo-checks#robots-check)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/robots-check
-cd robots-check
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/robots-check
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

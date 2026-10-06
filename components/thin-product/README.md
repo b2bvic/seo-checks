@@ -2,15 +2,16 @@
 
 `thin-product` counts page words for developers and search teams. Use its sitemap sample to select low-content pages for review.
 
-[Project page](https://scalewithsearch.com/code/thin-product)
+[Project page](https://scalewithsearch.com/code/seo-checks#thin-product)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/thin-product
-cd thin-product
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/thin-product
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

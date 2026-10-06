@@ -2,15 +2,16 @@
 
 `word-freq` counts filtered tokens for writers and search teams. Use its term and phrase reports to inspect repetition in content.
 
-[Project page](https://scalewithsearch.com/code/word-freq)
+[Project page](https://scalewithsearch.com/code/seo-checks#word-freq)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/word-freq
-cd word-freq
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/word-freq
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

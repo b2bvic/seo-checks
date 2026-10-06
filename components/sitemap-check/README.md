@@ -2,15 +2,16 @@
 
 `sitemap-check` parses XML sitemaps for search teams and developers. Use its bounded URL checks to inspect crawl inputs before changing a website.
 
-[Project page](https://scalewithsearch.com/code/sitemap-check)
+[Project page](https://scalewithsearch.com/code/seo-checks#sitemap-check)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/sitemap-check
-cd sitemap-check
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/sitemap-check
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

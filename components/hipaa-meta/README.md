@@ -2,15 +2,16 @@
 
 `hipaa-meta` flags possible identifiers for developers and healthcare content reviewers. Use its HTML findings to select metadata for human privacy review.
 
-[Project page](https://scalewithsearch.com/code/hipaa-meta)
+[Project page](https://scalewithsearch.com/code/seo-checks#hipaa-meta)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/hipaa-meta
-cd hipaa-meta
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/hipaa-meta
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

@@ -2,15 +2,16 @@
 
 `redirect-trace` records HTTP redirect hops for search teams and developers. Use its loop and downgrade reports to inspect routing problems before changing redirects.
 
-[Project page](https://scalewithsearch.com/code/redirect-trace)
+[Project page](https://scalewithsearch.com/code/seo-checks#redirect-trace)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/redirect-trace
-cd redirect-trace
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/redirect-trace
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```

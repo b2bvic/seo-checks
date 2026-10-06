@@ -2,15 +2,16 @@
 
 `spec-sheet` inspects product specification markup for developers and manufacturing content teams. Use its page findings to review technical content before editing it.
 
-[Project page](https://scalewithsearch.com/code/spec-sheet)
+[Project page](https://scalewithsearch.com/code/seo-checks#spec-sheet)
 
 ## Install
 
 Requirements: Python 3.11 or later.
 
 ```bash
-gh repo clone b2bvic/spec-sheet
-cd spec-sheet
+gh repo clone b2bvic/seo-checks
+cd seo-checks
+cd components/spec-sheet
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements-dev.txt
 ```
