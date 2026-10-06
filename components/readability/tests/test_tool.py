@@ -16,3 +16,11 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_inline_content_text_normalizes_whitespace(tool):
+    text = tool.extract_text(
+        "<nav>Ignore this</nav><main><h1>Stop<span>re-explaining</span> \n your\t business&nbsp; to AI.</h1></main>"
+    )
+    assert text == "Stop re-explaining your business to AI."
+    assert tool.analyze(text)["total_words"] == 6

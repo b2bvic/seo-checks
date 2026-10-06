@@ -72,7 +72,7 @@ def extract_from_url(url: str) -> str:
         tag.decompose()
     # Prefer article or main content
     body = soup.find("article") or soup.find("main") or soup.find("body")
-    return body.get_text(separator="\n", strip=True) if body else ""
+    return " ".join(body.get_text(separator=" ", strip=True).split()) if body else ""
 
 
 def sliding_window_inference(text: str, tokenizer, model, threshold: float):

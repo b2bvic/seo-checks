@@ -8,3 +8,10 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_inline_markup_does_not_change_image_alt_attributes(tool):
+    html = '<h1>Stop<span>re-explaining</span> your business</h1><a><span><img src="a.png" alt="Stop re-explaining your business"></span></a>'
+    images = tool.audit_images(html, "https://example.com")
+    assert images[0]["alt"] == "Stop re-explaining your business"
+    assert images[0]["status"] == "OK"

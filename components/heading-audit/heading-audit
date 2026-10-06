@@ -32,7 +32,7 @@ def audit_headings(html):
     headings = []
     for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
         level = int(tag.name[1])
-        text = tag.get_text(strip=True)[:80]
+        text = " ".join(tag.get_text(separator=" ", strip=True).split())[:80]
         headings.append({"level": level, "tag": tag.name, "text": text})
 
     issues = []

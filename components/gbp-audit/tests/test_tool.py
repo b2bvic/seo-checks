@@ -11,3 +11,13 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_inline_phone_with_whitespace_is_visible(tool):
+    soup = BeautifulSoup(
+        '<main><h1>Stop<span>re-explaining</span> your business</h1>'
+        '<p><span>(919) \n 555</span> \t 1234</p><p>123 Main Street</p></main>',
+        "lxml",
+    )
+    issues = tool.check_page_signals(soup)
+    assert {issue["type"] for issue in issues} == {"NO_EMBEDDED_MAP"}

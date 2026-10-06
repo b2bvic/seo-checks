@@ -13,3 +13,13 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_inline_spec_links_normalize_text_in_reports(tool):
+    soup = BeautifulSoup(
+        '<a href="/data.pdf">Technical<span>specifications</span> \n for\t business</a>',
+        "lxml",
+    )
+    issues, links = tool.check_pdf_specs(soup, "https://example.com/product")
+    assert links == [{"url": "https://example.com/data.pdf", "text": "Technical specifications for business"}]
+    assert issues[0]["detail"] == "Spec sheet as PDF: Technical specifications for business"

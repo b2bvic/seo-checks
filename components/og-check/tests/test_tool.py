@@ -10,3 +10,10 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_title_whitespace_with_inline_body_markup(tool):
+    tags = tool.extract_meta(
+        "<title>Stop \n re-explaining\t your business&nbsp; to AI.</title><h1>Stop<span>re-explaining</span> your business</h1>"
+    )
+    assert tags["_title"] == "Stop re-explaining your business to AI."

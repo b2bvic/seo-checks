@@ -8,3 +8,8 @@ def test_cli_help(tool):
     result = CliRunner().invoke(tool.main, ["--help"])
     assert result.exit_code == 0, result.output
     assert "Usage:" in result.output
+
+
+def test_inline_words_are_counted_separately(tool):
+    html = "<nav>Ignore this</nav><main><h1>Stop<span>re-explaining</span> \n your\t business&nbsp; to AI.</h1><p>Stop</p></main>"
+    assert tool.count_content_words(html) == (7, 6)
